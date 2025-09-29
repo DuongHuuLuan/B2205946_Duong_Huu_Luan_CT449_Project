@@ -10,8 +10,12 @@
   "author": "B2205946 Duong Huu Luan",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "mongodb": "^6.20.0"
   },
   "devDependencies": {
     "eslint": "^9.36.0",
