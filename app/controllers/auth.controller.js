@@ -37,7 +37,9 @@ exports.register = async (req, res, next) => {
       SoDienThoai,
     });
 
-    return res.status(201).send({ message: "Đăng ký thành công", id: result.insertedId });
+    return res
+      .status(201)
+      .send({ message: "Đăng ký thành công", id: result.insertedId });
   } catch (error) {
     return next(new ApiError(500, "Lỗi khi đăng ký tài khoản"));
   }
@@ -67,7 +69,12 @@ exports.login = async (req, res, next) => {
 
     // Tạo JWT token
     const token = jwt.sign(
-      { id: user._id, MSNV: user.MSNV, HoTenNV: user.HoTenNV, ChucVu: user.ChucVu },
+      {
+        id: user._id,
+        MSNV: user.MSNV,
+        HoTenNV: user.HoTenNV,
+        ChucVu: user.ChucVu,
+      },
       JWT_SECRET,
       { expiresIn: "1h" }
     );

@@ -1,5 +1,5 @@
 const { ObjectId } = require("mongodb");
-
+const ALLOWED_ROLES = ["Admin", "QuanLy", "ThuThu", "HoTro"];
 class NhanVienService {
   constructor(client) {
     this.NhanVien = client.db().collection("nhanvien");
@@ -7,10 +7,13 @@ class NhanVienService {
 
   // Thêm nhân viên
   async create(payload) {
+    if (!ALLOWED_ROLES.includes(payload.ChucVu)) {
+      throw new Error("Chức vụ không hợp lệ");
+    }
     const nv = {
       MSNV: payload.MSNV,
       HoTenNV: payload.HoTenNV,
-      Password: payload.Password, // sẽ được hash ở controller
+      Password: payload.Password,
       ChucVu: payload.ChucVu,
       DiaChi: payload.DiaChi,
       SoDienThoai: payload.SoDienThoai,

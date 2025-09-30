@@ -14,7 +14,7 @@ class TheoDoiMuonSachService {
 
     // Kiểm tra Sach tồn tại theo MaSach
     const sach = await this.Sach.findOne({ MaSach: payload.MaSach });
-    if (!sach) throw new Error("Sach không tồn tại");
+    if (!sach) throw new Error("sách không tồn tại");
 
     const doc = {
       MaDocGia: payload.MaDocGia,

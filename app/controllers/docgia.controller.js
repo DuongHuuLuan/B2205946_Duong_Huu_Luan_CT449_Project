@@ -20,7 +20,7 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// Hàm tìm kiếm tất cả Độc giả (READ all)
+// Hàm tìm kiếm tất cả Độc giả (READ all)   
 exports.findAll = async (req, res, next) => {
   let documents = [];
 
