@@ -1,11 +1,12 @@
 const app = require("./app");
 const config = require("./app/config");
 const MongoDB = require("./app/utils/mongodb.util");
-
+const thongkeController = require("./app/controllers/thongke.controller");
 async function startServer() {
   try {
-    await MongoDB.connect(config.db.uri);
+    const client = await MongoDB.connect(config.db.uri);
     console.log("Connected to the database!");
+    thongkeController.initServices(client);
 
     const PORT = config.app.port;
     app.listen(PORT, () => {
