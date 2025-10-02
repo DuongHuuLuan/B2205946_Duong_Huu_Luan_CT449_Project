@@ -64,6 +64,25 @@ class SachService {
     const result = await this.Sach.deleteMany({});
     return result.deletedCount;
   }
+
+  // phương thức cho thống kê
+  /**
+   * @description Đếm số lượng tài liệu dựa trên bộ lọc
+   * @param {Object} filter - Bộ lọc MongoDB (ví dụ: {})
+   */
+  async count(filter = {}) {
+    // Sử dụng phương thức countDocuments() của MongoDB driver
+    return await this.Sach.countDocuments(filter);
+  } /**
+   * @description Thực hiện các thao tác tổng hợp (Aggregation Pipeline)
+   * @param {Array} pipeline - Mảng các giai đoạn (stages) của Aggregation
+   */
+
+  async aggregate(pipeline) {
+    // Sử dụng phương thức aggregate() của MongoDB driver
+    const cursor = await this.Sach.aggregate(pipeline);
+    return await cursor.toArray();
+  }
 }
 
 module.exports = SachService;

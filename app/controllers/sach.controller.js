@@ -11,7 +11,11 @@ exports.create = async (req, res, next) => {
   try {
     const sachService = new SachService(MongoDB.client);
     const document = await sachService.create(req.body);
-    return res.send(document);
+
+    return res.send({
+      message: "Thêm sách thành công",
+      data: document,
+    });
   } catch (error) {
     return next(new ApiError(500, "Lỗi khi tạo sách mới"));
   }
@@ -19,11 +23,11 @@ exports.create = async (req, res, next) => {
 
 // Lấy tất cả sách
 exports.findAll = async (req, res, next) => {
-  let documents = [];
-
   try {
     const sachService = new SachService(MongoDB.client);
     const { TenSach } = req.query;
+
+    let documents = [];
     if (TenSach) {
       documents = await sachService.find({
         TenSach: { $regex: new RegExp(TenSach), $options: "i" },
@@ -31,11 +35,14 @@ exports.findAll = async (req, res, next) => {
     } else {
       documents = await sachService.find({});
     }
+
+    return res.send({
+      message: "Lấy danh sách sách thành công",
+      data: documents,
+    });
   } catch (error) {
     return next(new ApiError(500, "Lỗi khi lấy danh sách sách"));
   }
-
-  return res.send(documents);
 };
 
 // Lấy sách theo ID
@@ -47,7 +54,11 @@ exports.findOne = async (req, res, next) => {
     if (!document) {
       return next(new ApiError(404, "Không tìm thấy sách"));
     }
-    return res.send(document);
+
+    return res.send({
+      message: "Lấy sách thành công",
+      data: document,
+    });
   } catch (error) {
     return next(new ApiError(500, `Lỗi khi tìm sách id=${req.params.id}`));
   }
@@ -66,7 +77,11 @@ exports.update = async (req, res, next) => {
     if (!document) {
       return next(new ApiError(404, "Không tìm thấy sách để cập nhật"));
     }
-    return res.send({ message: "Cập nhật sách thành công" });
+
+    return res.send({
+      message: "Cập nhật sách thành công",
+      data: document,
+    });
   } catch (error) {
     return next(new ApiError(500, `Lỗi khi cập nhật sách id=${req.params.id}`));
   }
@@ -81,7 +96,11 @@ exports.delete = async (req, res, next) => {
     if (!document) {
       return next(new ApiError(404, "Không tìm thấy sách để xóa"));
     }
-    return res.send({ message: "Xóa sách thành công" });
+
+    return res.send({
+      message: "Xóa sách thành công",
+      data: document,
+    });
   } catch (error) {
     return next(new ApiError(500, `Lỗi khi xóa sách id=${req.params.id}`));
   }
@@ -95,6 +114,7 @@ exports.deleteAll = async (_req, res, next) => {
 
     return res.send({
       message: `${deletedCount} sách đã bị xóa`,
+      data: { deletedCount },
     });
   } catch (error) {
     return next(new ApiError(500, "Lỗi khi xóa toàn bộ sách"));

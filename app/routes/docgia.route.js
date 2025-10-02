@@ -1,20 +1,30 @@
 const express = require("express");
-const docgia = require("../controllers/docgia.controller");
-// const { route } = require("../app");
-
+const docgiaController = require("../controllers/docgia.controller");
+const verifyToken = require("../middlewares/authJwt");
+const authorizeRole = require("../middlewares/role");
 const router = express.Router();
 
-router.route("/")
-  .get(docgia.findAll)
-  .post(docgia.create)
-  .delete(docgia.deleteAll);
+router
+  .route("/")
+  .get(
+    verifyToken,
+    authorizeRole(["Admin", "QuanLy", "ThuThu", "HoTro"]),
+    docgiaController.findAll
+  )
+  .post(
+    verifyToken,
+    authorizeRole(["Admin", "QuanLy", "ThuThu"]),
+    docgiaController.create
+  );
 
-// router.route("/favorite")
-//   .get(docgia.findAllFavorite);
-
-router.route("/:id")
-  .get(docgia.findOne)
-  .put(docgia.update)
-  .delete(docgia.delete);
+router
+  .route("/:id")
+  .get(
+    verifyToken,
+    authorizeRole(["Admin", "QuanLy", "ThuThu", "HoTro"]),
+    docgiaController.findOne
+  )
+  .put(verifyToken, authorizeRole(["Admin", "QuanLy"]), docgiaController.update)
+  .delete(verifyToken, authorizeRole(["Admin"]), docgiaController.delete);
 
 module.exports = router;

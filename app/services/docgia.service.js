@@ -83,6 +83,17 @@ class DocGiaService {
     const result = await this.DocGia.deleteMany({});
     return result.deletedCount;
   }
+
+  // phương thức thống kê
+
+  /**
+   * @description Đếm số lượng tài liệu dựa trên bộ lọc
+   * @param {Object} filter - Bộ lọc MongoDB (ví dụ: {})
+   */
+  async count(filter = {}) {
+    // Sử dụng phương thức countDocuments() của MongoDB driver
+    return await this.DocGia.countDocuments(filter);
+  }
 }
 
 module.exports = DocGiaService;

@@ -75,6 +75,26 @@ class NhanVienService {
     const result = await this.NhanVien.deleteMany({});
     return result.deletedCount;
   }
+
+  // thống kê cho nhân viên
+
+  /**
+   * @description Đếm tổng số nhân viên dựa trên bộ lọc
+   * @param {Object} filter - Bộ lọc MongoDB (mặc định là rỗng)
+   */
+  async count(filter = {}) {
+    // Sử dụng phương thức countDocuments() của MongoDB driver
+    return await this.NhanVien.countDocuments(filter);
+  } /**
+   * @description Thực hiện các thao tác tổng hợp (Aggregation Pipeline)
+   * @param {Array} pipeline - Mảng các giai đoạn (stages) của Aggregation
+   */
+
+  async aggregate(pipeline) {
+    // Cần thiết nếu bạn muốn thống kê số lượng nhân viên theo từng Chức Vụ
+    const cursor = await this.NhanVien.aggregate(pipeline);
+    return await cursor.toArray();
+  }
 }
 
 module.exports = NhanVienService;

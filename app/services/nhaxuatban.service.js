@@ -61,6 +61,16 @@ class NhaXuatBanService {
     const result = await this.NXB.deleteMany({});
     return result.deletedCount;
   }
+  // phương thức cho thống kê
+
+  /**
+   * @description Đếm số lượng Nhà Xuất Bản dựa trên bộ lọc
+   * @param {Object} filter - Bộ lọc MongoDB (mặc định là rỗng để đếm tất cả)
+   */
+  async count(filter = {}) {
+    // Sử dụng phương thức countDocuments() của MongoDB driver
+    return await this.NXB.countDocuments(filter);
+  }
 }
 
 module.exports = NhaXuatBanService;
