@@ -2,6 +2,7 @@ const TheoDoiMuonSachService = require("../services/theodoimuonsach.service");
 const MongoDB = require("../utils/mongodb.util");
 const ApiError = require("../api-error");
 const moment = require("moment");
+
 // Tạo phiếu mượn
 exports.create = async (req, res, next) => {
   if (!req.body?.MaDocGia || !req.body?.MaSach) {
@@ -10,13 +11,21 @@ exports.create = async (req, res, next) => {
 
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
+
+    // Nếu không gửi HanTra thì mặc định +7 ngày từ ngày mượn
+    if (!req.body.HanTra && req.body.NgayMuon) {
+      req.body.HanTra = moment(req.body.NgayMuon).add(7, "days").toDate();
+    }
+
     const document = await tdmsService.create(req.body);
     return res.send({
       message: "Tạo phiếu mượn thành công",
       document,
     });
   } catch (error) {
-    return next(new ApiError(500, error.message || "Lỗi khi tạo phiếu mượn sách"));
+    return next(
+      new ApiError(500, error.message || "Lỗi khi tạo phiếu mượn sách")
+    );
   }
 };
 
@@ -26,12 +35,33 @@ exports.findAll = async (req, res, next) => {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
     let documents = await tdmsService.find({});
 
-    // Format ngày trước khi trả về
-    documents = documents.map(doc => ({
-      ...doc,
-      NgayMuon: doc.NgayMuon ? moment(doc.NgayMuon).format("YYYY-MM-DD") : null,
-      NgayTra: doc.NgayTra ? moment(doc.NgayTra).format("YYYY-MM-DD") : null,
-    }));
+    const today = new Date();
+
+    // Kiểm tra quá hạn
+    documents = await Promise.all(
+      documents.map(async (doc) => {
+        if (
+          doc.TrangThai === "Đang mượn" &&
+          doc.NgayTra &&
+          new Date(doc.NgayTra) < today
+        ) {
+          await tdmsService.update(doc._id.toString(), {
+            TrangThai: "Trễ hạn",
+          });
+          doc.TrangThai = "Trễ hạn";
+        }
+
+        return {
+          ...doc,
+          NgayMuon: doc.NgayMuon
+            ? moment(doc.NgayMuon).format("YYYY-MM-DD")
+            : null,
+          NgayTra: doc.NgayTra
+            ? moment(doc.NgayTra).format("YYYY-MM-DD")
+            : null,
+        };
+      })
+    );
 
     return res.send(documents);
   } catch (error) {
@@ -49,13 +79,31 @@ exports.findOne = async (req, res, next) => {
       return next(new ApiError(404, "Không tìm thấy phiếu mượn"));
     }
 
+    const today = new Date();
+    if (
+      document.TrangThai === "Đang mượn" &&
+      document.NgayTra &&
+      new Date(document.NgayTra) < today
+    ) {
+      await tdmsService.update(document._id.toString(), {
+        TrangThai: "Trễ hạn",
+      });
+      document.TrangThai = "Trễ hạn";
+    }
+
     // Format ngày
-    document.NgayMuon = document.NgayMuon ? moment(document.NgayMuon).format("YYYY-MM-DD") : null;
-    document.NgayTra = document.NgayTra ? moment(document.NgayTra).format("YYYY-MM-DD") : null;
+    document.NgayMuon = document.NgayMuon
+      ? moment(document.NgayMuon).format("YYYY-MM-DD")
+      : null;
+    document.NgayTra = document.NgayTra
+      ? moment(document.NgayTra).format("YYYY-MM-DD")
+      : null;
 
     return res.send(document);
   } catch (error) {
-    return next(new ApiError(500, `Lỗi khi tìm phiếu mượn id=${req.params.id}`));
+    return next(
+      new ApiError(500, `Lỗi khi tìm phiếu mượn id=${req.params.id}`)
+    );
   }
 };
 
@@ -77,7 +125,12 @@ exports.update = async (req, res, next) => {
       document,
     });
   } catch (error) {
-    return next(new ApiError(500, error.message || `Lỗi khi cập nhật phiếu mượn id=${req.params.id}`));
+    return next(
+      new ApiError(
+        500,
+        error.message || `Lỗi khi cập nhật phiếu mượn id=${req.params.id}`
+      )
+    );
   }
 };
 
@@ -95,7 +148,12 @@ exports.delete = async (req, res, next) => {
       document,
     });
   } catch (error) {
-    return next(new ApiError(500, error.message || `Lỗi khi xóa phiếu mượn id=${req.params.id}`));
+    return next(
+      new ApiError(
+        500,
+        error.message || `Lỗi khi xóa phiếu mượn id=${req.params.id}`
+      )
+    );
   }
 };
 
@@ -109,6 +167,8 @@ exports.deleteAll = async (_req, res, next) => {
       message: `${deletedCount} phiếu mượn đã bị xóa`,
     });
   } catch (error) {
-    return next(new ApiError(500, error.message || "Lỗi khi xóa toàn bộ phiếu mượn"));
+    return next(
+      new ApiError(500, error.message || "Lỗi khi xóa toàn bộ phiếu mượn")
+    );
   }
 };
