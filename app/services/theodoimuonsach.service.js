@@ -101,17 +101,53 @@ class TheoDoiMuonSachService {
     const today = new Date();
 
     for (let rec of records) {
+      let tienPhatHienTai = 0;
+
+      // 1. Kiểm tra và Cập nhật trạng thái Trễ hạn (đã sửa lỗi rec.TrangThai = trangThaiMoi)
       if (
         rec.TrangThai === "Đang mượn" &&
         rec.HanTra &&
         new Date(rec.HanTra) < today
       ) {
-        rec.TrangThai = "Trễ hạn";
+        rec.TrangThai = "Trễ hạn"; // Cập nhật trạng thái cho đối tượng trả về
 
         await this.TDMS.updateOne(
           { _id: rec._id },
-          { $set: { TrangThai: "Trễ hạn" } }
+          { $set: { TrangThai: "Trễ hạn" } } // Cập nhật vào DB
         );
+      }
+
+      // 2. Tính toán tiền phạt tạm thời (chỉ cho Trễ hạn) và Tổng Thanh toán
+
+      // PHẢI KHAI BÁO BIẾN hanTra ở đây để sử dụng trong khối if tiếp theo.
+      const hanTra = rec.HanTra ? new Date(rec.HanTra) : null;
+
+      if (rec.TrangThai === "Trễ hạn") {
+        // LỖI CÚ PHÁP ĐÃ ĐƯỢC KHẮC PHỤC (10000 -> 1000 * 60 * 60 * 24)
+        // LỖI CÚ PHÁP ĐÃ ĐƯỢC KHẮC PHỤC (new Date() - hanTra)
+        const soNgayTre = Math.ceil((today - hanTra) / (1000 * 60 * 60 * 24));
+
+        // Phạt 10000 VND/ngày/cuốn (Hằng số phạt 10000 được lấy từ code bạn cung cấp)
+        tienPhatHienTai = soNgayTre * 10000 * rec.ChiTietMuon.length;
+        if (tienPhatHienTai < 0) tienPhatHienTai = 0;
+
+        // Gán tiền phạt tạm thời vào đối tượng trả về
+        rec.TienPhatTamThoi = tienPhatHienTai;
+
+        // Gán tổng thanh toán tạm thời
+        rec.TongThanhToan = rec.TongTien + tienPhatHienTai;
+      } else if (rec.TrangThai === "Đã trả") {
+        if (rec.TongTienCuoi !== undefined) {
+          rec.TongThanhToan = rec.TongTienCuoi;
+        } else {
+          // Nếu đã trả rồi, dùng TienPhat và TongTien đã lưu trong DB
+          rec.TienPhatTamThoi = rec.TienPhat || 0;
+          rec.TongThanhToan = rec.TongTien + rec.TienPhatTamThoi;
+        }
+      } else {
+        // Nếu là "Chờ duyệt" hoặc "Đang mượn" (chưa trễ hạn)
+        rec.TienPhatTamThoi = 0;
+        rec.TongThanhToan = rec.TongTien;
       }
     }
 
@@ -173,16 +209,18 @@ class TheoDoiMuonSachService {
     // Trường hợp chuyển từ "Đang mượn" -> "Đã trả"
     else if (payload.TrangThai === "Đã trả" && doc.TrangThai !== "Đã trả") {
       let tienPhat = 0;
+      let tongTienCuoiCung = doc.TongTien || 0;
       if (doc.TrangThai === "Trễ hạn") {
         const today = new Date();
-        const hanTra = new Date(doc.HanTra);
-        const soNgayTre = Math.ceil((today - hanTra) / (1000 * 60 * 60 * 24));
+        const hanTra = new Date(doc.HanTra); // >> ĐÃ SỬA LỖI: 10000 ĐƯỢC THAY BẰNG 1000
 
-        // Ví dụ: Phạt 1000 VNĐ/ngày/cuốn
-        tienPhat = soNgayTre * 1000 * doc.ChiTietMuon.length;
+        const soNgayTre = Math.ceil((today - hanTra) / (1000 * 60 * 60 * 24)); // Ví dụ: Phạt 10000 VNĐ/ngày/cuốn (Mức phạt đã đồng nhất)
+
+        tienPhat = soNgayTre * 10000 * doc.ChiTietMuon.length;
 
         if (tienPhat < 0) tienPhat = 0;
       }
+      tongTienCuoiCung = (doc.TongTien || 0) + tienPhat;
 
       // Cập nhật số lượng tồn kho cho TỪNG cuốn sách
       // Dùng Set để chỉ tăng tồn kho một lần cho mỗi MaSach duy nhất
@@ -207,6 +245,7 @@ class TheoDoiMuonSachService {
         NgayTra: payload.NgayTra ? new Date(payload.NgayTra) : new Date(),
         NhanVienTra: payload.MSNV || null,
         TienPhat: tienPhat,
+        TongTienCuoi: tongTienCuoiCung,
         ChiTietMuon: chiTietMuonTra, // Cập nhật ChiTietMuon về trạng thái Đã trả
       };
     }
