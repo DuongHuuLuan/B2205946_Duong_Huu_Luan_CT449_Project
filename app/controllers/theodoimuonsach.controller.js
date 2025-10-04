@@ -30,9 +30,11 @@ exports.create = async (req, res, next) => {
       document,
     });
   } catch (error) {
-    return next(
-      new ApiError(500, error.message || "Lỗi khi tạo phiếu mượn sách")
-    );
+    console.error(error);
+    return res.status(400).json({
+      message: error.message || "Lỗi khi tạo phiếu mượn.",
+      error: error.message,
+    });
   }
 };
 
