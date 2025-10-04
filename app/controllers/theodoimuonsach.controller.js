@@ -2,11 +2,18 @@ const TheoDoiMuonSachService = require("../services/theodoimuonsach.service");
 const MongoDB = require("../utils/mongodb.util");
 const ApiError = require("../api-error");
 const moment = require("moment");
-
+const { ObjectId } = require("mongodb");
 // Tạo phiếu mượn
 exports.create = async (req, res, next) => {
-  if (!req.body?.MaDocGia || !req.body?.MaSach) {
-    return next(new ApiError(400, "MaDocGia và MaSach không được để trống"));
+  // Thay đổi kiểm tra: MaDocGia và ChiTietMuon (mảng) không được trống
+  if (
+    !req.body?.MaDocGia ||
+    !req.body?.ChiTietMuon ||
+    req.body.ChiTietMuon.length === 0
+  ) {
+    return next(
+      new ApiError(400, "Mã Độc Giả và Chi tiết sách mượn không được để trống")
+    );
   }
 
   try {
@@ -33,35 +40,15 @@ exports.create = async (req, res, next) => {
 exports.findAll = async (req, res, next) => {
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
-    let documents = await tdmsService.find({});
+    let documents = await tdmsService.find({}); // Service đã tự động cập nhật trạng thái "Trễ hạn"
 
-    const today = new Date();
-
-    // Kiểm tra quá hạn
-    documents = await Promise.all(
-      documents.map(async (doc) => {
-        if (
-          doc.TrangThai === "Đang mượn" &&
-          doc.NgayTra &&
-          new Date(doc.NgayTra) < today
-        ) {
-          await tdmsService.update(doc._id.toString(), {
-            TrangThai: "Trễ hạn",
-          });
-          doc.TrangThai = "Trễ hạn";
-        }
-
-        return {
-          ...doc,
-          NgayMuon: doc.NgayMuon
-            ? moment(doc.NgayMuon).format("YYYY-MM-DD")
-            : null,
-          NgayTra: doc.NgayTra
-            ? moment(doc.NgayTra).format("YYYY-MM-DD")
-            : null,
-        };
-      })
-    );
+    // Chỉ cần format ngày và trả về
+    documents = documents.map((doc) => ({
+      ...doc,
+      NgayMuon: doc.NgayMuon ? moment(doc.NgayMuon).format("YYYY-MM-DD") : null,
+      HanTra: doc.HanTra ? moment(doc.HanTra).format("YYYY-MM-DD") : null,
+      NgayTra: doc.NgayTra ? moment(doc.NgayTra).format("YYYY-MM-DD") : null,
+    }));
 
     return res.send(documents);
   } catch (error) {
@@ -73,27 +60,22 @@ exports.findAll = async (req, res, next) => {
 exports.findOne = async (req, res, next) => {
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
-    let document = await tdmsService.findById(req.params.id);
+    // Dùng find để đảm bảo phiếu mượn được kiểm tra và cập nhật trạng thái "Trễ hạn" nếu cần
+    const documents = await tdmsService.find({
+      _id: ObjectId.isValid(req.params.id) ? new ObjectId(req.params.id) : null,
+    });
+    let document = documents[0];
 
     if (!document) {
       return next(new ApiError(404, "Không tìm thấy phiếu mượn"));
     }
 
-    const today = new Date();
-    if (
-      document.TrangThai === "Đang mượn" &&
-      document.NgayTra &&
-      new Date(document.NgayTra) < today
-    ) {
-      await tdmsService.update(document._id.toString(), {
-        TrangThai: "Trễ hạn",
-      });
-      document.TrangThai = "Trễ hạn";
-    }
-
     // Format ngày
     document.NgayMuon = document.NgayMuon
       ? moment(document.NgayMuon).format("YYYY-MM-DD")
+      : null;
+    document.HanTra = document.HanTra
+      ? moment(document.HanTra).format("YYYY-MM-DD")
       : null;
     document.NgayTra = document.NgayTra
       ? moment(document.NgayTra).format("YYYY-MM-DD")

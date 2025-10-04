@@ -8,29 +8,83 @@ class TheoDoiMuonSachService {
   }
 
   async create(payload) {
-    const docGia = await this.DocGia.findOne({ MaDocGia: payload.MaDocGia });
+    const { MaDocGia, ChiTietMuon } = payload;
+
+    // 1. Kiểm tra Độc Giả và giới hạn số lượng sách mượn
+    const docGia = await this.DocGia.findOne({ MaDocGia });
     if (!docGia) throw new Error("Mã Độc Giả không tồn tại");
 
-    const sach = await this.Sach.findOne({ MaSach: payload.MaSach });
-    if (!sach) throw new Error("Sách không tồn tại");
-
-    if (sach.SoQuyen <= 0) throw new Error("Sách đã hết");
-
-    const soSachDangMuon = await this.TDMS.countDocuments({
-      MaDocGia: payload.MaDocGia,
-      TrangThai: { $in: ["Chờ duyệt", "Đang mượn"] },
-    });
-
-    if (soSachDangMuon >= 3) {
-      throw new Error("Mỗi độc giả chỉ được mượn tối đa 3 cuốn cùng lúc");
+    if (!ChiTietMuon || ChiTietMuon.length === 0) {
+      throw new Error("Vui lòng chọn sách để mượn.");
+    }
+    if (ChiTietMuon.length > 3) {
+      throw new Error("Mỗi lần mượn tối đa 3 cuốn sách.");
     }
 
+    // 2. Kiểm tra sách, số lượng tồn kho và tính Tổng Tiền
+    let tongTien = 0;
+    const chiTietMuonMoi = [];
+
+    for (const item of ChiTietMuon) {
+      const sach = await this.Sach.findOne({ MaSach: item.MaSach });
+
+      if (!sach) throw new Error(`Sách với Mã ${item.MaSach} không tồn tại`);
+      if (sach.SoQuyen <= 0) throw new Error(`Sách '${sach.TenSach}' đã hết.`);
+
+      // FIX 1: Lấy giá sách từ trường DonGia (theo dữ liệu mẫu bạn cung cấp)
+      const giaSach = sach.DonGia || 0;
+      tongTien += giaSach;
+
+      chiTietMuonMoi.push({
+        MaSach: item.MaSach,
+        GiaTien: giaSach, // FIX 1: Lưu giá trị DonGia/GiaSach vào GiaTien (khắc phục lỗi 'N/A')
+        TrangThai: "Chưa trả",
+      });
+    }
+
+    // 3. Kiểm tra giới hạn mượn (đếm tổng số cuốn sách đang mượn)
+    const recordsDangMuon = await this.TDMS.find({
+      MaDocGia: MaDocGia,
+      TrangThai: { $in: ["Chờ duyệt", "Đang mượn", "Trễ hạn"] },
+    }).toArray();
+
+    let soCuonDangMuon = 0;
+    recordsDangMuon.forEach((rec) => {
+      // Chỉ đếm những cuốn sách chưa trả trong ChiTietMuon
+      rec.ChiTietMuon.forEach((chiTiet) => {
+        if (chiTiet.TrangThai !== "Đã trả") {
+          soCuonDangMuon++;
+        }
+      });
+    });
+
+    // Cộng thêm số cuốn đang mượn trong đơn hàng mới
+    const tongCuonSauMuon = soCuonDangMuon + ChiTietMuon.length;
+
+    if (tongCuonSauMuon > 3) {
+      // Giới hạn tổng số cuốn đang mượn là 3
+      throw new Error(
+        `Mỗi độc giả chỉ được mượn tối đa 3 cuốn sách cùng lúc. Hiện tại đang mượn ${soCuonDangMuon} cuốn, không thể mượn thêm ${ChiTietMuon.length} cuốn.`
+      );
+    }
+
+    // 4. Kiểm tra Trễ hạn (logic cấm mượn mới)
+    const hasOverdueBook = recordsDangMuon.some(
+      (rec) => rec.TrangThai === "Trễ hạn"
+    );
+    if (hasOverdueBook) {
+      throw new Error("Độc giả đang có sách trễ hạn và bị cấm mượn sách mới.");
+    }
+
+    // 5. Tạo tài liệu mới
     const doc = {
-      MaDocGia: payload.MaDocGia,
-      MaSach: payload.MaSach,
-      NgayMuon: new Date(payload.NgayMuon),
+      MaDocGia,
+      ChiTietMuon: chiTietMuonMoi,
+      TongTien: tongTien,
+      TienPhat: 0,
+      NgayMuon: payload.NgayMuon ? new Date(payload.NgayMuon) : new Date(),
       HanTra: payload.HanTra ? new Date(payload.HanTra) : null,
-      NgayTra: payload.NgayTra ? new Date(payload.NgayTra) : null,
+      NgayTra: null,
       TrangThai: "Chờ duyệt",
       NhanVienDuyet: null,
       NhanVienTra: null,
@@ -80,17 +134,24 @@ class TheoDoiMuonSachService {
 
     // Trường hợp chuyển từ "Chờ duyệt" -> "Đang mượn"
     if (payload.TrangThai === "Đang mượn" && doc.TrangThai === "Chờ duyệt") {
-      const sach = await this.Sach.findOne({ MaSach: doc.MaSach });
-      if (!sach || sach.SoQuyen <= 0) {
-        throw new Error("Sách đã hết, không thể duyệt.");
+      // Dùng Set để chỉ cập nhật một lần cho mỗi MaSach duy nhất
+      const uniqueMaSach = new Set(doc.ChiTietMuon.map((item) => item.MaSach));
+
+      for (const maSach of uniqueMaSach) {
+        const sach = await this.Sach.findOne({ MaSach: maSach });
+
+        if (!sach || sach.SoQuyen <= 0) {
+          throw new Error(`Sách có Mã '${maSach}' đã hết, không thể duyệt.`);
+        }
+
+        // FIX 2: Giảm số lượng tồn kho cho sách
+        await this.Sach.updateOne(
+          { MaSach: maSach },
+          { $inc: { SoQuyen: -1 } }
+        );
       }
 
-      await this.Sach.updateOne(
-        { MaSach: doc.MaSach },
-        { $inc: { SoQuyen: -1 } }
-      );
-
-      // auto set NgayMuon và HanTra nếu chưa có
+      // Cập nhật thông tin phiếu mượn
       const ngayMuon = payload.NgayMuon
         ? new Date(payload.NgayMuon)
         : new Date();
@@ -111,29 +172,63 @@ class TheoDoiMuonSachService {
 
     // Trường hợp chuyển từ "Đang mượn" -> "Đã trả"
     else if (payload.TrangThai === "Đã trả" && doc.TrangThai !== "Đã trả") {
-      await this.Sach.updateOne(
-        { MaSach: doc.MaSach },
-        { $inc: { SoQuyen: +1 } }
-      );
+      let tienPhat = 0;
+      if (doc.TrangThai === "Trễ hạn") {
+        const today = new Date();
+        const hanTra = new Date(doc.HanTra);
+        const soNgayTre = Math.ceil((today - hanTra) / (1000 * 60 * 60 * 24));
+
+        // Ví dụ: Phạt 1000 VNĐ/ngày/cuốn
+        tienPhat = soNgayTre * 1000 * doc.ChiTietMuon.length;
+
+        if (tienPhat < 0) tienPhat = 0;
+      }
+
+      // Cập nhật số lượng tồn kho cho TỪNG cuốn sách
+      // Dùng Set để chỉ tăng tồn kho một lần cho mỗi MaSach duy nhất
+      const uniqueMaSach = new Set(doc.ChiTietMuon.map((item) => item.MaSach));
+
+      for (const maSach of uniqueMaSach) {
+        // FIX 2: Tăng số lượng tồn kho
+        await this.Sach.updateOne(
+          { MaSach: maSach },
+          { $inc: { SoQuyen: +1 } } // Tăng số lượng tồn kho
+        );
+      }
+
+      // Gán trạng thái "Đã trả" cho tất cả chi tiết mượn (nếu cần)
+      const chiTietMuonTra = doc.ChiTietMuon.map((item) => ({
+        ...item,
+        TrangThai: "Đã trả",
+      }));
 
       updateData = {
         TrangThai: "Đã trả",
         NgayTra: payload.NgayTra ? new Date(payload.NgayTra) : new Date(),
         NhanVienTra: payload.MSNV || null,
+        TienPhat: tienPhat,
+        ChiTietMuon: chiTietMuonTra, // Cập nhật ChiTietMuon về trạng thái Đã trả
       };
     }
 
     // Nếu chỉ update thông tin khác (không đổi trạng thái)
     else {
+      // Khi cập nhật các trường khác, cần đảm bảo ChiTietMuon cũng được update
       updateData = {
         ...(payload.MaDocGia && { MaDocGia: payload.MaDocGia }),
-        ...(payload.MaSach && { MaSach: payload.MaSach }),
         ...(payload.NgayMuon && { NgayMuon: new Date(payload.NgayMuon) }),
         ...(payload.NgayTra && { NgayTra: new Date(payload.NgayTra) }),
         ...(payload.HanTra && { HanTra: new Date(payload.HanTra) }),
         ...(payload.TrangThai && { TrangThai: payload.TrangThai }),
+        // Cần đảm bảo ChiTietMuon được cập nhật khi người dùng thêm/xóa sách
+        ...(payload.ChiTietMuon && { ChiTietMuon: payload.ChiTietMuon }),
       };
     }
+
+    // Loại bỏ MaSach cũ (nếu có trong payload)
+    if (updateData.MaSach) delete updateData.MaSach;
+
+    // Cập nhật vào DB
     const result = await this.TDMS.findOneAndUpdate(
       { _id: objectId },
       { $set: updateData },
