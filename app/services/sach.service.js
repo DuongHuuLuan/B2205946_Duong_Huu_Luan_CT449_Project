@@ -39,18 +39,19 @@ class SachService {
       _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
     });
   }
-
   async update(id, payload) {
     const filter = { _id: ObjectId.isValid(id) ? new ObjectId(id) : null };
     const update = this.extractSachData(payload);
 
-    const result = await this.Sach.findOneAndUpdate(
-      filter,
-      { $set: update },
-      { returnDocument: "after" }
-    );
+    //update trước
+    const result = await this.Sach.updateOne(filter, { $set: update });
 
-    return result.value;
+    if (result.matchedCound == 0) {
+      return null;
+    }
+
+    // lấy lại document sau khi update
+    return await this.Sach.findOne(filter);
   }
 
   async delete(id) {

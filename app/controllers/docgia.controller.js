@@ -1,10 +1,10 @@
 const ApiError = require("../api-error");
-const DocGiaService = require("../services/docgia.service"); 
+const DocGiaService = require("../services/docgia.service");
 const MongoDB = require("../utils/mongodb.util");
 
 // Hàm tạo mới Độc giả (CREATE)
 exports.create = async (req, res, next) => {
-  if (!req.body?.Ten) { 
+  if (!req.body?.Ten) {
     return next(new ApiError(400, "Ten (Tên) của Độc giả không thể trống"));
   }
 
@@ -14,36 +14,46 @@ exports.create = async (req, res, next) => {
     const document = await docGiaService.create(req.body);
     return res.send(document);
   } catch (error) {
-    return next(
-      new ApiError(500, "Đã xảy ra lỗi khi tạo Độc giả mới")
-    );
+    return next(new ApiError(500, "Đã xảy ra lỗi khi tạo Độc giả mới"));
   }
 };
 
-// Hàm tìm kiếm tất cả Độc giả (READ all)   
+// Lấy tất cả Độc Giả (thêm cờ hasBorrowed)
 exports.findAll = async (req, res, next) => {
-  let documents = [];
-
   try {
-    const docGiaService = new DocGiaService(MongoDB.client);
-    // Thay đổi tham số query từ 'name' sang 'ten' để tìm kiếm theo tên Độc giả
-    const {
-      ten
-    } = req.query; 
-    if (ten) {
-      // Hàm tìm kiếm theo tên
-      documents = await docGiaService.findByName(ten);
-    } else {
-      // Hàm tìm kiếm tất cả (không có điều kiện)
-      documents = await docGiaService.find({});
-    }
-  } catch (error) {
-    return next(
-      new ApiError(500, "Đã xảy ra lỗi khi truy xuất danh sách Độc giả")
-    );
-  }
+    const db = MongoDB.client.db();
+    const docGiaCollection = db.collection("docgia");
 
-  return res.send(documents);
+    const documents = await docGiaCollection
+      .aggregate([
+        {
+          $lookup: {
+            from: "theodoimuonsach",
+            let: { maDocGia: "$MaDocGia" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$MaDocGia", "$$maDocGia"] },
+                  $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
+                },
+              },
+            ],
+            as: "borrowInfo",
+          },
+        },
+        {
+          $addFields: {
+            hasBorrowed: { $gt: [{ $size: "$borrowInfo" }, 0] },
+          },
+        },
+        { $project: { borrowInfo: 0 } },
+      ])
+      .toArray();
+
+    res.send(documents);
+  } catch (error) {
+    return next(new ApiError(500, "Lỗi khi lấy danh sách Độc Giả"));
+  }
 };
 
 // Hàm tìm kiếm một Độc giả theo ID (READ one)
@@ -57,10 +67,7 @@ exports.findOne = async (req, res, next) => {
     return res.send(document);
   } catch (error) {
     return next(
-      new ApiError(
-        500,
-        `Lỗi truy xuất Độc giả với id=${req.params.id}`
-      )
+      new ApiError(500, `Lỗi truy xuất Độc giả với id=${req.params.id}`)
     );
   }
 };
@@ -79,36 +86,70 @@ exports.update = async (req, res, next) => {
     }
 
     return res.send({
-      message: "Thông tin Độc giả đã được cập nhật thành công"
+      message: "Thông tin Độc giả đã được cập nhật thành công",
     });
   } catch (error) {
     return next(
-      new ApiError(
-        500,
-        `Lỗi cập nhật Độc giả với id=${req.params.id}`
-      )
+      new ApiError(500, `Lỗi cập nhật Độc giả với id=${req.params.id}`)
     );
   }
 };
 
 // Hàm xóa một Độc giả (DELETE one)
+// exports.delete = async (req, res, next) => {
+//   try {
+//     const docGiaService = new DocGiaService(MongoDB.client);
+//     const document = await docGiaService.delete(req.params.id);
+//     if (document === null) {
+//       return next(new ApiError(404, "Không tìm thấy Độc giả"));
+//     }
+//     return res.send({
+//       message: "Độc giả đã được xóa thành công"
+//     });
+//   } catch (error) {
+//     return next(
+//       new ApiError(
+//         500,
+//         `Không thể xóa Độc giả với id=${req.params.id}`
+//       )
+//     );
+//   }
+// };
+// Xóa độc giả theo ID (có kiểm tra ràng buộc mượn sách)
 exports.delete = async (req, res, next) => {
   try {
     const docGiaService = new DocGiaService(MongoDB.client);
-    const document = await docGiaService.delete(req.params.id);
-    if (document === null) {
-      return next(new ApiError(404, "Không tìm thấy Độc giả"));
+    const docGiaId = req.params.id;
+
+    // Lấy độc giả trước
+    const docGia = await docGiaService.findById(docGiaId);
+    if (!docGia) {
+      return next(new ApiError(404, "Không tìm thấy độc giả để xoá"));
     }
+
+    const muonCollection = MongoDB.client.db().collection("theodoimuonsach");
+
+    // Kiểm tra độc giả có đang mượn sách chưa trả không
+    const hasBorrowed = await muonCollection.findOne({
+      MaDocGia: docGia.MaDocGia,
+      $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
+    });
+
+    if (hasBorrowed) {
+      return next(
+        new ApiError(400, "Không thể xoá độc giả vì vẫn đang mượn sách")
+      );
+    }
+
+    // Nếu không ràng buộc thì xoá
+    const document = await docGiaService.delete(docGiaId);
+
     return res.send({
-      message: "Độc giả đã được xóa thành công"
+      message: "Xoá độc giả thành công",
+      data: document,
     });
   } catch (error) {
-    return next(
-      new ApiError(
-        500,
-        `Không thể xóa Độc giả với id=${req.params.id}`
-      )
-    );
+    return next(new ApiError(500, `Lỗi khi xoá độc giả id=${req.params.id}`));
   }
 };
 
@@ -137,8 +178,6 @@ exports.deleteAll = async (_req, res, next) => {
       message: `${deletedCount} Độc giả đã được xóa thành công`,
     });
   } catch (error) {
-    return next(
-      new ApiError(500, "Đã xảy ra lỗi khi xóa tất cả Độc giả")
-    );
+    return next(new ApiError(500, "Đã xảy ra lỗi khi xóa tất cả Độc giả"));
   }
 };

@@ -17,25 +17,35 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// Lấy tất cả NXB
+// Lấy tất cả NXB (thêm số lượng sách bookCount)
 exports.findAll = async (req, res, next) => {
-  let documents = [];
-
   try {
-    const nxbService = new NhaXuatBanService(MongoDB.client);
-    const { TenNXB } = req.query;
-    if (TenNXB) {
-      documents = await nxbService.find({
-        TenNXB: { $regex: new RegExp(TenNXB), $options: "i" },
-      });
-    } else {
-      documents = await nxbService.find({});
-    }
-  } catch (error) {
-    return next(new ApiError(500, "Lỗi khi lấy danh sách NXB"));
-  }
+    const db = MongoDB.client.db();
+    const nxbCollection = db.collection("nhaxuatban");
 
-  return res.send(documents);
+    const documents = await nxbCollection
+      .aggregate([
+        {
+          $lookup: {
+            from: "sach",
+            localField: "MaNXB",
+            foreignField: "MaNXB",
+            as: "sachList",
+          },
+        },
+        {
+          $addFields: {
+            bookCount: { $size: "$sachList" },
+          },
+        },
+        { $project: { sachList: 0 } },
+      ])
+      .toArray();
+
+    res.send(documents);
+  } catch (error) {
+    return next(new ApiError(500, "Lỗi khi lấy danh sách Nhà Xuất Bản"));
+  }
 };
 
 // Lấy NXB theo ID
@@ -71,19 +81,41 @@ exports.update = async (req, res, next) => {
     return next(new ApiError(500, `Lỗi khi cập nhật NXB id=${req.params.id}`));
   }
 };
-
-// Xóa 1 NXB
+// Xoá NXB theo ID (có kiểm tra ràng buộc sách)
 exports.delete = async (req, res, next) => {
   try {
     const nxbService = new NhaXuatBanService(MongoDB.client);
-    const document = await nxbService.delete(req.params.id);
+    const nxbId = req.params.id;
 
-    if (!document) {
-      return next(new ApiError(404, "Không tìm thấy NXB để xóa"));
+    // Tìm NXB
+    const nxb = await nxbService.findById(nxbId);
+    if (!nxb) {
+      return next(new ApiError(404, "Không tìm thấy Nhà Xuất Bản để xoá"));
     }
-    return res.send({ message: "Xóa NXB thành công" });
+
+    // Kiểm tra có sách nào thuộc NXB này không
+    const sachCollection = MongoDB.client.db().collection("sach");
+    const hasBook = await sachCollection.findOne({ MaNXB: nxb.MaNXB });
+
+    if (hasBook) {
+      return next(
+        new ApiError(
+          400,
+          "Không thể xoá Nhà Xuất Bản vì vẫn còn sách thuộc Nhà Xuất Bản này"
+        )
+      );
+    }
+
+    // Nếu không còn ràng buộc thì xoá
+    const document = await nxbService.delete(nxbId);
+    return res.send({
+      message: "Xoá Nhà Xuất Bản thành công",
+      data: document,
+    });
   } catch (error) {
-    return next(new ApiError(500, `Lỗi khi xóa NXB id=${req.params.id}`));
+    return next(
+      new ApiError(500, `Lỗi khi xoá Nhà Xuất Bản id=${req.params.id}`)
+    );
   }
 };
 
