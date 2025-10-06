@@ -3,8 +3,7 @@ export default {};
 </script>
 
 <template>
-  <h1>Hello, Vue.js</h1>
-
+  <router-view></router-view>
 </template>
 
 <style>

@@ -1,7 +1,8 @@
 import { createWebHistory, createRouter } from "vue-router";
+import { useAuthStore } from "@/stores/authStore";
 import HomeView from "@/views/HomeView.vue";
-import LoginForm from "@/components/auth/LoginForm.vue";
-
+import Login from "@/views/auth/Login.vue";
+import Register from "@/views/auth/Register.vue";
 const routes = [
   {
     path: "/",
@@ -11,8 +12,14 @@ const routes = [
   {
     path: "/login",
     name: "login",
-    component: LoginView,
-    meta: { requiresGuest: true }, // Chỉ truy cập khi chưa đăng nhập
+    component: Login,
+    meta: { requiresGuest: false }, // Chỉ truy cập khi chưa đăng nhập
+  },
+  {
+    path: "/register",
+    name: "register",
+    component: Register,
+    meta: { requiresGuest: false }, // Chỉ truy cập khi đăng ký
   },
   {
     path: "/sach",
@@ -34,7 +41,16 @@ const router = createRouter({
   routes,
 });
 
-// Thêm Navigation Guard (TÙY CHỌN, CÓ THỂ LÀM SAU) để kiểm tra trạng thái đăng nhập
-// router.beforeEach(...)
+// Thêm Navigation Guard (Tùy chọn: Để kiểm tra đăng nhập)
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore(); // Import useAuthStore
+
+  // Kiểm tra xem route có yêu cầu đăng nhập không VÀ người dùng CHƯA đăng nhập
+  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
+    next({ name: "login" }); // Chuyển hướng về trang đăng nhập
+  } else {
+    next(); // Tiếp tục
+  }
+});
 
 export default router;
