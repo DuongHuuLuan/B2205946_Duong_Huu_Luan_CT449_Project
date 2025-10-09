@@ -66,6 +66,7 @@ const router = express.Router();
 
 // ----------------------------------------------------------------------
 // ROUTE CHO ĐỘC GIẢ (Chỉ xem)
+// ----------------------------------------------------------------------
 
 // GET /api/sach/available (Tìm sách có sẵn)
 // Chỉ cần xác thực và ủy quyền là Độc giả
