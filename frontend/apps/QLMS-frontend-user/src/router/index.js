@@ -13,18 +13,24 @@ const routes = [
     path: "/login",
     name: "login",
     component: Login,
-    meta: { requiresGuest: false }, // Chỉ truy cập khi chưa đăng nhập
+    meta: { requiresGuest: true }, // Chỉ truy cập khi chưa đăng nhập
   },
   {
     path: "/register",
     name: "register",
     component: Register,
-    meta: { requiresGuest: false }, // Chỉ truy cập khi đăng ký
+    meta: { requiresGuest: true }, // Chỉ truy cập khi đăng ký
   },
   {
     path: "/sach",
     name: "sach.list",
-    component: () => import("../views/SachListView.vue"),
+    component: () => import("../views/readers/BookListView.vue"),
+  },
+  {
+    path: "/reader/books/:id",
+    name: "reader.book-detail",
+    component: () => import("@/views/readers/BookDetailView.vue"),
+    meta: { requiresAuth: true, role: "docgia" },
   },
   {
     path: "/profile",
@@ -32,8 +38,18 @@ const routes = [
     component: () => import("../views/ProfileView.vue"),
     meta: { requiresAuth: true }, // BẮT BUỘC ĐĂNG NHẬP
   },
-  // Thêm các routes khác (Đăng ký, Chi tiết sách, Mượn sách,...)
-  // ...
+  {
+    path: "/borrow",
+    name: "borrow-list",
+    component: () => import("@/views/muonsach/BorrowListView.vue"),
+    meta: { requiresAuth: true, role: "docgia" },
+  },
+  {
+    path: "/borrow/new",
+    name: "borrow-create",
+    component: () => import("@/views/muonsach/BorrowCreateView.vue"),
+    meta: { requiresAuth: true, role: "docgia" },
+  },
 ];
 
 const router = createRouter({

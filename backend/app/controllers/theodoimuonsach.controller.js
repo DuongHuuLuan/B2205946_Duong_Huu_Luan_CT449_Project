@@ -156,3 +156,86 @@ exports.deleteAll = async (_req, res, next) => {
     );
   }
 };
+
+// Độc giả xem các sách mình đang mượn
+exports.findByDocGia = async (req, res, next) => {
+  try {
+    const MaDocGia = req.user.MaDocGia; // lấy từ token
+    const db = MongoDB.client.db();
+    const collection = db.collection("theodoimuonsach");
+
+    const documents = await collection
+      .aggregate([
+        { $match: { MaDocGia: MaDocGia } },
+        {
+          $lookup: {
+            from: "sach",
+            localField: "ChiTietMuon.MaSach",
+            foreignField: "MaSach",
+            as: "SachThongTin",
+          },
+        },
+        { $sort: { NgayMuon: -1 } },
+      ])
+      .toArray();
+
+    res.send(documents);
+  } catch (error) {
+    console.error(error);
+    return next(
+      new ApiError(500, "Lỗi khi lấy danh sách mượn sách của độc giả")
+    );
+  }
+};
+
+// Độc giả tự mượn sách
+exports.createByDocGia = async (req, res, next) => {
+  try {
+    const MaDocGia = req.user.MaDocGia; // Lấy từ token
+    const { ChiTietMuon } = req.body;
+
+    if (!ChiTietMuon || !Array.isArray(ChiTietMuon) || ChiTietMuon.length === 0)
+      return next(new ApiError(400, "Danh sách sách mượn không hợp lệ"));
+
+    if (ChiTietMuon.length > 3)
+      return next(new ApiError(400, "Chỉ được mượn tối đa 3 sách"));
+
+    const db = MongoDB.client.db();
+    const sachCollection = db.collection("sach");
+    const muonCollection = db.collection("theodoimuonsach");
+
+    // Kiểm tra số lượng sách còn lại
+    for (const item of ChiTietMuon) {
+      const sach = await sachCollection.findOne({ MaSach: item.MaSach });
+      if (!sach)
+        return next(new ApiError(404, `Không tìm thấy sách ${item.MaSach}`));
+      if (sach.SoQuyenCon <= 0)
+        return next(new ApiError(400, `Sách ${sach.TenSach} đã hết`));
+    }
+
+    // Tạo phiếu mượn
+    const newBorrow = {
+      MaDocGia,
+      NgayMuon: new Date(),
+      HanTra: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // hạn trả sau 7 ngày
+      ChiTietMuon,
+      TrangThai: "Đang mượn",
+      TongThanhToan: 0,
+    };
+
+    const result = await muonCollection.insertOne(newBorrow);
+
+    // Giảm số lượng sách còn lại
+    for (const item of ChiTietMuon) {
+      await sachCollection.updateOne(
+        { MaSach: item.MaSach },
+        { $inc: { SoQuyenCon: -1 } }
+      );
+    }
+
+    res.send({ message: "Mượn sách thành công", id: result.insertedId });
+  } catch (error) {
+    console.error(error);
+    return next(new ApiError(500, "Lỗi khi độc giả mượn sách"));
+  }
+};

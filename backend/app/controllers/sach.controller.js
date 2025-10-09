@@ -21,39 +21,6 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// Lấy tất cả sách
-// exports.findAll = async (req, res, next) => {
-//   try {
-//     const sachService = new SachService(MongoDB.client);
-//     const { TenSach } = req.query;
-
-//     let documents = [];
-//     if (TenSach) {
-//       documents = await sachService.find({
-//         TenSach: { $regex: new RegExp(TenSach), $options: "i" },
-//       });
-//     } else {
-//       documents = await sachService.find({});
-//     }
-
-//     const theoDoiMuonSach = MongoDB.client.db().collection("theodoimuonsach");
-
-//     // gán thêm cờ isBorrowed
-//     for (let doc of documents) {
-//       const borrowed = await theoDoiMuonSach.findOne({
-//         "ChiTietMuon.MaSach": doc.MaSach,
-//         $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
-//       });
-//     }
-
-//     return res.send({
-//       message: "Lấy danh sách sách thành công",
-//       data: documents,
-//     });
-//   } catch (error) {
-//     return next(new ApiError(500, "Lỗi khi lấy danh sách sách"));
-//   }
-// };
 exports.findAll = async (req, res, next) => {
   try {
     const db = MongoDB.client.db();
@@ -187,5 +154,20 @@ exports.deleteAll = async (_req, res, next) => {
     });
   } catch (error) {
     return next(new ApiError(500, "Lỗi khi xóa toàn bộ sách"));
+  }
+};
+//độc giả
+// Lấy danh sách sách có thể mượn (SoQuyen > 0)
+exports.findAvailable = async (req, res, next) => {
+  try {
+    const sachService = new SachService(MongoDB.client);
+    const documents = await sachService.find({ SoQuyen: { $gt: 0 } });
+
+    return res.send({
+      message: "Lấy danh sách sách có thể mượn thành công",
+      data: documents,
+    });
+  } catch (error) {
+    return next(new ApiError(500, "Lỗi khi lấy danh sách sách có thể mượn"));
   }
 };

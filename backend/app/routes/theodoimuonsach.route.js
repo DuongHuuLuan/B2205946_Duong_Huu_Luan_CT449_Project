@@ -25,4 +25,9 @@ router
   .put(verifyToken, authorizeRole(["Admin", "QuanLy", "ThuThu"]), tdms.update) // Ghi trả/Cập nhật
   .delete(verifyToken, authorizeRole(["Admin"]), tdms.delete); // Xóa bản ghi (chỉ Admin)
 
+// route cho độc giả
+router
+  .route("/docgia")
+  .get(verifyToken, authorizeRole(["DocGia"]), tdms.findByDocGia) // Xem các sách đã mượn
+  .post(verifyToken, authorizeRole(["DocGia"]), tdms.createByDocGia); // mượn sách mới
 module.exports = router;
