@@ -156,17 +156,31 @@ exports.deleteAll = async (_req, res, next) => {
     );
   }
 };
+// File: theodoimuonsach.controller.js
 
 // Độc giả xem các sách mình đang mượn
 exports.findByDocGia = async (req, res, next) => {
   try {
-    const MaDocGia = req.user.MaDocGia; // lấy từ token
+    const MaDocGia = req.user.MaDocGia;
     const db = MongoDB.client.db();
     const collection = db.collection("theodoimuonsach");
 
     const documents = await collection
       .aggregate([
         { $match: { MaDocGia: MaDocGia } },
+
+        // SỬA: BỎ TongThanhToan. Chỉ ưu tiên TongTien (cho cả cũ và mới)
+        {
+          $addFields: {
+            TongTienHienThi: {
+              $ifNull: [
+                "$TongTien", // Chỉ kiểm tra TongTien
+                0, // Mặc định là 0
+              ],
+            },
+          },
+        },
+
         {
           $lookup: {
             from: "sach",
@@ -191,8 +205,8 @@ exports.findByDocGia = async (req, res, next) => {
 // Độc giả tự mượn sách
 exports.createByDocGia = async (req, res, next) => {
   try {
-    const MaDocGia = req.user.MaDocGia; // Lấy từ token
-    const { ChiTietMuon } = req.body;
+    const MaDocGia = req.user.MaDocGia;
+    const { ChiTietMuon, TongTien, NgayMuon, HanTra } = req.body;
 
     if (!ChiTietMuon || !Array.isArray(ChiTietMuon) || ChiTietMuon.length === 0)
       return next(new ApiError(400, "Danh sách sách mượn không hợp lệ"));
@@ -204,38 +218,59 @@ exports.createByDocGia = async (req, res, next) => {
     const sachCollection = db.collection("sach");
     const muonCollection = db.collection("theodoimuonsach");
 
-    // Kiểm tra số lượng sách còn lại
+    // Lấy và kiểm tra tiền cọc gửi từ Frontend
+    const tienCocTuFrontend = Number(TongTien) || 0;
+
+    if (tienCocTuFrontend <= 0) {
+      return next(
+        new ApiError(
+          400,
+          "Tổng tiền cọc phải lớn hơn 0. Vui lòng kiểm tra giá sách."
+        )
+      );
+    }
+
     for (const item of ChiTietMuon) {
       const sach = await sachCollection.findOne({ MaSach: item.MaSach });
+
       if (!sach)
         return next(new ApiError(404, `Không tìm thấy sách ${item.MaSach}`));
-      if (sach.SoQuyenCon <= 0)
-        return next(new ApiError(400, `Sách ${sach.TenSach} đã hết`));
+
+      // Kiểm tra số lượng còn lại
+      const soQuyenCon = sach.SoQuyenCon || sach.SoQuyen || 0;
+      if (soQuyenCon <= 0 || item.SoLuong > soQuyenCon)
+        return next(
+          new ApiError(
+            400,
+            `Sách ${sach.TenSach} không đủ số lượng (${item.SoLuong} > ${soQuyenCon})`
+          )
+        );
     }
 
     // Tạo phiếu mượn
     const newBorrow = {
       MaDocGia,
-      NgayMuon: new Date(),
-      HanTra: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // hạn trả sau 7 ngày
+      NgayMuon: NgayMuon ? new Date(NgayMuon) : new Date(),
+      HanTra: HanTra
+        ? new Date(HanTra)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       ChiTietMuon,
-      TrangThai: "Đang mượn",
-      TongThanhToan: 0,
+      TrangThai: "Chờ duyệt",
+      // Chỉ lưu vào TongTien. KHÔNG CÓ TongThanhToan
+      TongTien: tienCocTuFrontend,
+      NgayTra: null,
     };
 
     const result = await muonCollection.insertOne(newBorrow);
 
-    // Giảm số lượng sách còn lại
-    for (const item of ChiTietMuon) {
-      await sachCollection.updateOne(
-        { MaSach: item.MaSach },
-        { $inc: { SoQuyenCon: -1 } }
-      );
-    }
-
-    res.send({ message: "Mượn sách thành công", id: result.insertedId });
+    res.send({
+      message: "Yêu cầu mượn sách đã được gửi đi. Vui lòng chờ duyệt.",
+      id: result.insertedId,
+    });
   } catch (error) {
-    console.error(error);
-    return next(new ApiError(500, "Lỗi khi độc giả mượn sách"));
+    console.error("Lỗi Controller createByDocGia:", error);
+    return next(
+      new ApiError(500, error.message || "Lỗi khi độc giả mượn sách")
+    );
   }
 };

@@ -1,14 +1,8 @@
-<script>
-export default {};
+<script setup>
+import Header from "@/components/common/Header.vue";
 </script>
 
 <template>
-  <router-view></router-view>
+  <Header />
+  <router-view />
 </template>
-
-<style>
-.page {
-  max-width: 400px;
-  margin: auto;
-}
-</style>

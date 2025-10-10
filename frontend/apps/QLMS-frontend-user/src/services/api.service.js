@@ -3,7 +3,7 @@
 import axios from "axios";
 
 const DOCGIA_TOKEN_KEY = "docgiaToken";
-const BASE_URL = "http://localhost:3000/api";
+const BASE_URL = "http://localhost:3002/api";
 
 // 1.PUBLIC API (KHÔNG CÓ Interceptor Token)
 // Dùng cho Login, Register.

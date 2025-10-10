@@ -1,9 +1,10 @@
 <template>
     <div class="book-list">
         <SearchBar @search="onSearch" />
-        <LoadingSpinner v-if="bookStore.loading" />
-        <EmptyState v-else-if="filteredBooks.length === 0" text="Không có sách khả dụng" />
-        <BookCard v-for="b in filteredBooks" :key="b._id" :book="b" @view="viewDetail" />
+
+        <EmptyState v-if="!bookStore.loading && filteredBooks.length === 0" text="Không có sách khả dụng" />
+
+        <BookTable v-else :books="filteredBooks" @view="viewDetail" @borrow="borrowBook" />
     </div>
 </template>
 
@@ -12,9 +13,9 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useBookStore } from "@/stores/bookStore";
 import SearchBar from "@/components/readers/SearchBar.vue";
-import BookCard from "@/components/readers/BookCard.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
-import LoadingSpinner from "@/components/common/LoadingSpinner.vue";
+
+import BookTable from "@/components/readers/BookTable.vue";
 
 const bookStore = useBookStore();
 const router = useRouter();
@@ -24,7 +25,7 @@ onMounted(() => bookStore.fetchAvailableBooks());
 
 const filteredBooks = computed(() =>
     bookStore.books.filter((b) =>
-        b.TenSach.toLowerCase().includes(search.value.toLowerCase())
+        (b.TenSach || "").toLowerCase().includes(search.value.toLowerCase())
     )
 );
 
@@ -34,5 +35,19 @@ function onSearch(value) {
 
 function viewDetail(book) {
     router.push(`/reader/books/${book._id}`);
+}
+
+/**
+ * Hàm xử lý khi người dùng nhấn nút Mượn Sách.
+ * Điều hướng đến trang xác nhận mượn (checkout).
+ * @param {Object} book - Đối tượng sách được chọn.
+ */
+function borrowBook(book) {
+    // Điều hướng đến route 'reader.checkout-book' với ID sách
+    // (Giả định ID của sách là _id)
+    router.push({
+        name: 'reader.checkout-book',
+        params: { id: book._id }
+    });
 }
 </script>

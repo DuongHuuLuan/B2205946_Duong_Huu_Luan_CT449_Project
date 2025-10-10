@@ -39,15 +39,15 @@ const routes = [
     meta: { requiresAuth: true }, // BẮT BUỘC ĐĂNG NHẬP
   },
   {
-    path: "/borrow",
-    name: "borrow-list",
-    component: () => import("@/views/muonsach/BorrowListView.vue"),
+    path: "/reader/checkout/:id",
+    name: "reader.checkout-book",
+    component: () => import("@/views/muonsach/MuonSachAdd.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
   {
-    path: "/borrow/new",
-    name: "borrow-create",
-    component: () => import("@/views/muonsach/BorrowCreateView.vue"),
+    path: "/reader/borrowed",
+    name: "borrowed.list", // Tên route này dùng để active link trong navbar
+    component: () => import("@/views/muonsach/MuonSachList.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
 ];
@@ -65,7 +65,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     next({ name: "login" }); // Chuyển hướng về trang đăng nhập
   } else {
-    next(); // Tiếp tục
+    next();
   }
 });
 
