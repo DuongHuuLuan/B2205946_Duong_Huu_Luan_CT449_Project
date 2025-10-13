@@ -1,30 +1,34 @@
 import { createWebHistory, createRouter } from "vue-router";
-import { useAuthStore } from "@/stores/authStore";
 import HomeView from "@/views/HomeView.vue";
 import Login from "@/views/auth/Login.vue";
 import Register from "@/views/auth/Register.vue";
+
+const DOCGIA_TOKEN_KEY = "docgiaToken";
+
 const routes = [
   {
     path: "/",
     name: "home",
     component: HomeView,
+    meta: { requiresAuth: true },
   },
   {
     path: "/login",
     name: "login",
     component: Login,
-    meta: { requiresGuest: true }, // Chỉ truy cập khi chưa đăng nhập
+    meta: { requiresGuest: true },
   },
   {
     path: "/register",
     name: "register",
     component: Register,
-    meta: { requiresGuest: true }, // Chỉ truy cập khi đăng ký
+    meta: { requiresGuest: true },
   },
   {
     path: "/sach",
     name: "sach.list",
-    component: () => import("../views/readers/BookListView.vue"),
+    component: () => import("@/views/readers/BookListView.vue"),
+    meta: { requiresAuth: true, role: "docgia" },
   },
   {
     path: "/reader/books/:id",
@@ -33,20 +37,15 @@ const routes = [
     meta: { requiresAuth: true, role: "docgia" },
   },
   {
-    path: "/profile",
-    name: "profile",
-    component: () => import("../views/ProfileView.vue"),
-    meta: { requiresAuth: true }, // BẮT BUỘC ĐĂNG NHẬP
-  },
-  {
     path: "/reader/checkout/:id",
     name: "reader.checkout-book",
     component: () => import("@/views/muonsach/MuonSachAdd.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
+  // --- đảm bảo có route cho /reader/borrowed ---
   {
     path: "/reader/borrowed",
-    name: "borrowed.list", // Tên route này dùng để active link trong navbar
+    name: "borrowed.list",
     component: () => import("@/views/muonsach/MuonSachList.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
@@ -56,6 +55,11 @@ const routes = [
     component: () => import("@/views/docgia/ProfileView.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
+  // fallback
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/login",
+  },
 ];
 
 const router = createRouter({
@@ -63,16 +67,36 @@ const router = createRouter({
   routes,
 });
 
-// Thêm Navigation Guard (Tùy chọn: Để kiểm tra đăng nhập)
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore(); // Import useAuthStore
+  const token = localStorage.getItem(DOCGIA_TOKEN_KEY);
 
-  // Kiểm tra xem route có yêu cầu đăng nhập không VÀ người dùng CHƯA đăng nhập
-  if (to.meta.requiresAuth && !authStore.isLoggedIn) {
-    next({ name: "login" }); // Chuyển hướng về trang đăng nhập
-  } else {
-    next();
+  console.log(
+    "[ROUTER GUARD] to:",
+    to.name,
+    "requiresAuth:",
+    !!to.meta.requiresAuth,
+    "requiresGuest:",
+    !!to.meta.requiresGuest,
+    "tokenPresent:",
+    !!token
+  );
+
+  const requiresAuth = !!to.meta.requiresAuth;
+  const requiresGuest = !!to.meta.requiresGuest;
+
+  if (requiresAuth && !token) {
+    // eslint-disable-next-line no-console
+    console.warn("[ROUTER GUARD] redirect -> login (no token)");
+    return next({ name: "login" });
   }
+
+  if (token && requiresGuest) {
+    // eslint-disable-next-line no-console
+    console.warn("[ROUTER GUARD] already logged in -> redirect to home");
+    return next({ name: "home" });
+  }
+
+  return next();
 });
 
 export default router;

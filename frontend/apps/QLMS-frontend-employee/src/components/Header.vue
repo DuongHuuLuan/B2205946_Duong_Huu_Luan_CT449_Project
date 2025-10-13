@@ -112,7 +112,7 @@ function handleLogout() {
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-lg sticky-top border-bottom border-secondary">
         <div class="container-fluid">
             <RouterLink class="navbar-brand fw-bold fs-5 text-warning" to="/">
-                <i class="fas fa-book-open me-2"></i> QL Mượn Sách
+                <i class="fas fa-book-open me-2"></i> Quản Lý Mượn Sách
             </RouterLink>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"

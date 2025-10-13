@@ -1,64 +1,71 @@
 <template>
-    <div class="register-container">
-        <div class="card register-card shadow-lg">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-4 fw-bold text-primary">
-                    Đăng Ký Tài Khoản Độc Giả
-                </h3>
+    <div class="auth-layout-bg">
+        <div class="card register-card shadow-lg p-3">
+            <div class="card-body p-4">
+                <div class="text-center mb-3"> <i class="fas fa-user-plus fa-2x text-primary mb-2"></i>
+                    <h3 class="card-title text-center mb-3 fw-bold text-primary"> Đăng Ký Tài Khoản Độc Giả
+                    </h3>
+                    <p class="text-muted">Tạo tài khoản mới để bắt đầu khám phá</p>
+                </div>
 
                 <div v-if="errorMessage" class="alert alert-danger text-center">
                     {{ errorMessage }}
                 </div>
 
                 <form @submit.prevent="handleRegister">
-                    <div class="mb-3">
-                        <label for="MaDocGia" class="form-label">Mã Độc Giả (*):</label>
+                    <div class="mb-2 input-group"> <span class="input-group-text"><i class="fas fa-id-card"></i></span>
                         <input type="text" id="MaDocGia" class="form-control" v-model="registerData.MaDocGia"
-                            required />
+                            placeholder="Mã Độc Giả (*)" required />
                     </div>
 
-                    <div class="mb-3">
-                        <label for="HoLot" class="form-label">Họ Lót (*):</label>
-                        <input type="text" id="HoLot" class="form-control" v-model="registerData.HoLot" required />
+                    <div class="mb-2 input-group">
+                        <span class="input-group-text"><i class="fas fa-signature"></i></span>
+                        <input type="text" id="HoLot" class="form-control" v-model="registerData.HoLot"
+                            placeholder="Họ Lót (*)" required />
                     </div>
 
-                    <div class="mb-3">
-                        <label for="Ten" class="form-label">Tên (*):</label>
-                        <input type="text" id="Ten" class="form-control" v-model="registerData.Ten" required />
+                    <div class="mb-2 input-group">
+                        <span class="input-group-text"><i class="fas fa-font"></i></span>
+                        <input type="text" id="Ten" class="form-control" v-model="registerData.Ten"
+                            placeholder="Tên (*)" required />
                     </div>
 
-                    <div class="mb-3">
-                        <label for="NgaySinh" class="form-label">Ngày Sinh:</label>
-                        <input type="date" id="NgaySinh" class="form-control" v-model="registerData.NgaySinh" />
+                    <div class="mb-2 input-group">
+                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                        <input type="date" id="NgaySinh" class="form-control" v-model="registerData.NgaySinh"
+                            placeholder="Ngày Sinh" />
                     </div>
 
-                    <div class="mb-3">
-                        <label for="Phai" class="form-label">Giới Tính:</label>
+                    <div class="mb-2 input-group">
+                        <span class="input-group-text"><i class="fas fa-venus-mars"></i></span>
                         <select id="Phai" class="form-control" v-model="registerData.Phai">
-                            <option value="">Chọn giới tính</option>
+                            <option value="" disabled>Chọn giới tính</option>
                             <option value="Nam">Nam</option>
                             <option value="Nu">Nữ</option>
                             <option value="Khac">Khác</option>
                         </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="DiaChi" class="form-label">Địa Chỉ:</label>
-                        <input type="text" id="DiaChi" class="form-control" v-model="registerData.DiaChi" />
+                    <div class="mb-2 input-group">
+                        <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                        <input type="text" id="DiaChi" class="form-control" v-model="registerData.DiaChi"
+                            placeholder="Địa Chỉ" />
                     </div>
 
-                    <div class="mb-3">
-                        <label for="DienThoai" class="form-label">Điện Thoại:</label>
-                        <input type="text" id="DienThoai" class="form-control" v-model="registerData.DienThoai" />
+                    <div class="mb-2 input-group">
+                        <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                        <input type="text" id="DienThoai" class="form-control" v-model="registerData.DienThoai"
+                            placeholder="Điện Thoại" />
                     </div>
 
-                    <div class="mb-3">
-                        <label for="Password" class="form-label">Mật Khẩu (*):</label>
+                    <div class="mb-3 input-group"> <span class="input-group-text"><i class="fas fa-key"></i></span>
                         <input type="password" id="Password" class="form-control" v-model="registerData.Password"
-                            required />
+                            placeholder="Mật Khẩu (*)" required />
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">Đăng Ký</button>
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold mb-3">
+                        <i class="fas fa-user-plus me-2"></i> Đăng Ký
+                    </button>
                 </form>
 
                 <p class="mt-3 text-center">
@@ -69,8 +76,8 @@
         </div>
     </div>
 </template>
-
 <script>
+// (Phần script giữ nguyên vì logic vẫn đúng)
 import AuthService from "@/services/auth.service";
 import Swal from "sweetalert2";
 
@@ -125,9 +132,8 @@ export default {
 };
 </script>
 
-<style scoped>
-.register-container {
-    max-width: 400px;
-    margin: 50px auto;
-}
+<style>
+/* Đảm bảo đường dẫn import trỏ đến file CSS mới của bạn */
+@import "@/assets/styles/login-register.css";
+/* Nếu bạn đổi tên thành auth-forms.css thì phải đổi lại đường dẫn */
 </style>

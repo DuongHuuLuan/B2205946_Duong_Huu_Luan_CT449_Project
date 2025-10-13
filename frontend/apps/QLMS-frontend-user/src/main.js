@@ -1,10 +1,17 @@
+// src/main.js
 import "./assets/main.css";
 
 import { createApp } from "vue";
-import App from "./App.vue";
 import { createPinia } from "pinia";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
+import App from "./App.vue";
 import router from "./router";
 
-createApp(App).use(router).use(createPinia()).mount("#app");
+import "bootstrap/dist/css/bootstrap.min.css";
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import "./assets/styles/login-register.css";
+const app = createApp(App);
+
+app.use(createPinia());
+app.use(router);
+
+app.mount("#app");

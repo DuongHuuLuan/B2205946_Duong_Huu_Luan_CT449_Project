@@ -43,8 +43,6 @@ function viewDetail(book) {
  * @param {Object} book - Đối tượng sách được chọn.
  */
 function borrowBook(book) {
-    // Điều hướng đến route 'reader.checkout-book' với ID sách
-    // (Giả định ID của sách là _id)
     router.push({
         name: 'reader.checkout-book',
         params: { id: book._id }
