@@ -47,13 +47,30 @@ class DocGiaService {
   }
 
   async update(id, payload) {
-    const filter = { _id: ObjectId.isValid(id) ? new ObjectId(id) : null };
-    const update = this.extractDocGiaData(payload);
+    let filter;
+
+    if (typeof id === "object") {
+      filter = id; // ví dụ { MaDocGia: "DG001" }
+    } else {
+      filter = {
+        _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
+      };
+    }
+
+    const updateData = this.extractDocGiaData(payload);
+
+    // Nếu có Password thì hash lại
+    if (updateData.Password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.Password = await bcrypt.hash(updateData.Password, salt);
+    }
+
     const result = await this.DocGia.findOneAndUpdate(
       filter,
-      { $set: update },
+      { $set: updateData },
       { returnDocument: "after" }
     );
+
     return result.value;
   }
 

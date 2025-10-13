@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
     <div class="borrow-list-container">
         <h2 class="title">Phiếu Mượn Của Tôi</h2>
 
@@ -38,7 +38,7 @@ import BorrowCard from "@/components/phieumuon/BorrowCard.vue";
 const authStore = useAuthStore();
 
 const borrows = ref([]);
-const loading = ref(true);
+const loading = ref(true);  
 const error = ref(null);
 const currentFilter = ref('all');
 
@@ -69,10 +69,82 @@ const filteredBorrows = computed(() => {
 onMounted(() => {
     fetchBorrows();
 });
+</script> -->
+
+<template>
+    <div class="borrow-list-container">
+        <h2 class="title">Phiếu Mượn Của Tôi</h2>
+
+        <div v-if="loading" class="loading-state">
+            <p>Đang tải danh sách phiếu mượn...</p>
+        </div>
+
+        <div v-else-if="error" class="error-state">
+            <p>Không thể tải dữ liệu: {{ error }}</p>
+        </div>
+
+        <div v-else>
+            <StatusFilter :current-filter="currentFilter" :borrows="borrows" @update:filter="currentFilter = $event" />
+
+            <div v-if="filteredBorrows.length > 0" class="borrow-cards">
+                <BorrowCard v-for="borrow in filteredBorrows" :key="borrow._id" :borrow="borrow" />
+            </div>
+
+            <div v-else class="no-data">
+                <p>Không có phiếu mượn nào trong trạng thái "{{ currentFilter === 'all' ? 'Tất cả' : currentFilter }}".
+                </p>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import TheoDoiMuonSachService from "@/services/theodoimuonsach.service";
+import { useAuthStore } from "@/stores/authStore";
+
+import StatusFilter from "@/components/phieumuon/StatusFilter.vue";
+import BorrowCard from "@/components/phieumuon/BorrowCard.vue";
+
+const authStore = useAuthStore();
+
+const borrows = ref([]);
+const loading = ref(true);
+const error = ref(null);
+const currentFilter = ref('all');
+
+async function fetchBorrows() {
+    if (!authStore.isLoggedIn) {
+        loading.value = false;
+        return;
+    }
+    loading.value = true;
+    error.value = null;
+    try {
+        const data = await TheoDoiMuonSachService.findByDocGia();
+        borrows.value = data;
+    } catch (err) {
+        console.error("Lỗi khi tải phiếu mượn:", err);
+        error.value = "Vui lòng kiểm tra kết nối API.";
+    } finally {
+        loading.value = false;
+    }
+}
+
+const filteredBorrows = computed(() => {
+    if (currentFilter.value === 'all') {
+        return borrows.value;
+    }
+    return borrows.value.filter(b => b.TrangThai === currentFilter.value);
+});
+
+onMounted(() => {
+    fetchBorrows();
+});
 </script>
 
+
 <style scoped>
-/* CSS cho View (chủ yếu là bố cục tổng thể và trạng thái tải) */
 .borrow-list-container {
     max-width: 900px;
     margin: 40px auto;

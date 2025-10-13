@@ -1,11 +1,37 @@
+// controllers/theodoimuonsach.controller.js
 const TheoDoiMuonSachService = require("../services/theodoimuonsach.service");
 const MongoDB = require("../utils/mongodb.util");
 const ApiError = require("../api-error");
 const moment = require("moment");
 const { ObjectId } = require("mongodb");
-// Tạo phiếu mượn
+
+/* Helper: tính số ngày trễ theo UTC (không lệch do giờ địa phương)
+   Trả về số ngày > 0 (nếu không trễ trả 0).
+*/
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+function overdueDays(hanTra, now = new Date()) {
+  if (!hanTra) return 0;
+  const dHan = new Date(hanTra);
+  const dNow = new Date(now);
+
+  const utcHan = Date.UTC(
+    dHan.getUTCFullYear(),
+    dHan.getUTCMonth(),
+    dHan.getUTCDate()
+  );
+  const utcNow = Date.UTC(
+    dNow.getUTCFullYear(),
+    dNow.getUTCMonth(),
+    dNow.getUTCDate()
+  );
+
+  const diffDays = Math.floor((utcNow - utcHan) / MS_PER_DAY);
+  return diffDays > 0 ? diffDays : 0;
+}
+
+// ====== Controllers ======
+
 exports.create = async (req, res, next) => {
-  // Thay đổi kiểm tra: MaDocGia và ChiTietMuon (mảng) không được trống
   if (
     !req.body?.MaDocGia ||
     !req.body?.ChiTietMuon ||
@@ -19,7 +45,6 @@ exports.create = async (req, res, next) => {
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
 
-    // Nếu không gửi HanTra thì mặc định +7 ngày từ ngày mượn
     if (!req.body.HanTra && req.body.NgayMuon) {
       req.body.HanTra = moment(req.body.NgayMuon).add(7, "days").toDate();
     }
@@ -38,13 +63,11 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// Lấy tất cả phiếu mượn
 exports.findAll = async (req, res, next) => {
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
-    let documents = await tdmsService.find({}); // Service đã tự động cập nhật trạng thái "Trễ hạn"
+    let documents = await tdmsService.find({});
 
-    // Chỉ cần format ngày và trả về
     documents = documents.map((doc) => ({
       ...doc,
       NgayMuon: doc.NgayMuon ? moment(doc.NgayMuon).format("YYYY-MM-DD") : null,
@@ -58,21 +81,18 @@ exports.findAll = async (req, res, next) => {
   }
 };
 
-// Lấy phiếu mượn theo ID
 exports.findOne = async (req, res, next) => {
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
-    // Dùng find để đảm bảo phiếu mượn được kiểm tra và cập nhật trạng thái "Trễ hạn" nếu cần
     const documents = await tdmsService.find({
       _id: ObjectId.isValid(req.params.id) ? new ObjectId(req.params.id) : null,
     });
-    let document = documents[0];
+    const document = documents[0];
 
     if (!document) {
       return next(new ApiError(404, "Không tìm thấy phiếu mượn"));
     }
 
-    // Format ngày
     document.NgayMuon = document.NgayMuon
       ? moment(document.NgayMuon).format("YYYY-MM-DD")
       : null;
@@ -91,7 +111,6 @@ exports.findOne = async (req, res, next) => {
   }
 };
 
-// Cập nhật phiếu mượn
 exports.update = async (req, res, next) => {
   if (Object.keys(req.body).length === 0) {
     return next(new ApiError(400, "Dữ liệu cập nhật không được trống"));
@@ -118,7 +137,6 @@ exports.update = async (req, res, next) => {
   }
 };
 
-// Xóa 1 phiếu mượn
 exports.delete = async (req, res, next) => {
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
@@ -141,7 +159,6 @@ exports.delete = async (req, res, next) => {
   }
 };
 
-// Xóa tất cả phiếu mượn
 exports.deleteAll = async (_req, res, next) => {
   try {
     const tdmsService = new TheoDoiMuonSachService(MongoDB.client);
@@ -156,31 +173,23 @@ exports.deleteAll = async (_req, res, next) => {
     );
   }
 };
-// File: theodoimuonsach.controller.js
 
-// Độc giả xem các sách mình đang mượn
+// ====== Độc giả xem các sách mình đang mượn (cập nhật tiền phạt nếu cần) ======
 exports.findByDocGia = async (req, res, next) => {
   try {
     const MaDocGia = req.user.MaDocGia;
     const db = MongoDB.client.db();
     const collection = db.collection("theodoimuonsach");
 
-    const documents = await collection
+    // Lấy dữ liệu có join thông tin sách
+    let documents = await collection
       .aggregate([
         { $match: { MaDocGia: MaDocGia } },
-
-        // SỬA: BỎ TongThanhToan. Chỉ ưu tiên TongTien (cho cả cũ và mới)
         {
           $addFields: {
-            TongTienHienThi: {
-              $ifNull: [
-                "$TongTien", // Chỉ kiểm tra TongTien
-                0, // Mặc định là 0
-              ],
-            },
+            TongTienHienThi: { $ifNull: ["$TongTien", 0] },
           },
         },
-
         {
           $lookup: {
             from: "sach",
@@ -193,7 +202,71 @@ exports.findByDocGia = async (req, res, next) => {
       ])
       .toArray();
 
-    res.send(documents);
+    // Post-process: compute/update TienPhat & TongThanhToan when necessary
+    const FINE_PER_DAY = 10000; // thay đổi nếu cần
+    const today = new Date();
+
+    for (const doc of documents) {
+      try {
+        const hanTra = doc.HanTra ? new Date(doc.HanTra) : null;
+
+        // tính tổng số cuốn (sum SoLuong nếu có)
+        const numBooks = Array.isArray(doc.ChiTietMuon)
+          ? doc.ChiTietMuon.reduce((s, it) => s + (it.SoLuong ?? 1), 0)
+          : 1;
+
+        // tính số ngày trễ theo helper chuẩn
+        const soNgayTre = overdueDays(hanTra, today);
+
+        const tienPhat =
+          soNgayTre > 0 ? soNgayTre * FINE_PER_DAY * numBooks : 0;
+        const tongThanh = (doc.TongTien ?? 0) + tienPhat;
+
+        // cần update DB nếu giá trị khác hoặc nếu đang ở trạng thái Đang mượn nhưng đã trễ
+        const needDbUpdate =
+          (doc.TienPhat ?? 0) !== tienPhat ||
+          (doc.TongThanhToan ?? 0) !== tongThanh ||
+          (doc.TrangThai === "Đang mượn" && soNgayTre > 0);
+
+        if (needDbUpdate) {
+          await collection.updateOne(
+            { _id: doc._id },
+            {
+              $set: {
+                TrangThai: soNgayTre > 0 ? "Trễ hạn" : doc.TrangThai,
+                TienPhat: tienPhat,
+                TongThanhToan: tongThanh,
+              },
+            }
+          );
+
+          // reflect to returned object
+          doc.TrangThai = soNgayTre > 0 ? "Trễ hạn" : doc.TrangThai;
+          doc.TienPhat = tienPhat;
+          doc.TongThanhToan = tongThanh;
+        } else {
+          doc.TienPhat = doc.TienPhat ?? 0;
+          doc.TongThanhToan = doc.TongThanhToan ?? doc.TongTien ?? 0;
+        }
+
+        // Format ngày cho client
+        doc.NgayMuon = doc.NgayMuon
+          ? moment(doc.NgayMuon).format("YYYY-MM-DD")
+          : null;
+        doc.HanTra = doc.HanTra
+          ? moment(doc.HanTra).format("YYYY-MM-DD")
+          : null;
+        doc.NgayTra = doc.NgayTra
+          ? moment(doc.NgayTra).format("YYYY-MM-DD")
+          : null;
+      } catch (err) {
+        console.error("Error processing borrow doc:", doc?._id, err);
+        doc.TienPhat = doc.TienPhat ?? 0;
+        doc.TongThanhToan = doc.TongThanhToan ?? doc.TongTien ?? 0;
+      }
+    }
+
+    return res.send(documents);
   } catch (error) {
     console.error(error);
     return next(
@@ -218,7 +291,6 @@ exports.createByDocGia = async (req, res, next) => {
     const sachCollection = db.collection("sach");
     const muonCollection = db.collection("theodoimuonsach");
 
-    // Lấy và kiểm tra tiền cọc gửi từ Frontend
     const tienCocTuFrontend = Number(TongTien) || 0;
 
     if (tienCocTuFrontend <= 0) {
@@ -232,11 +304,9 @@ exports.createByDocGia = async (req, res, next) => {
 
     for (const item of ChiTietMuon) {
       const sach = await sachCollection.findOne({ MaSach: item.MaSach });
-
       if (!sach)
         return next(new ApiError(404, `Không tìm thấy sách ${item.MaSach}`));
 
-      // Kiểm tra số lượng còn lại
       const soQuyenCon = sach.SoQuyenCon || sach.SoQuyen || 0;
       if (soQuyenCon <= 0 || item.SoLuong > soQuyenCon)
         return next(
@@ -247,7 +317,6 @@ exports.createByDocGia = async (req, res, next) => {
         );
     }
 
-    // Tạo phiếu mượn
     const newBorrow = {
       MaDocGia,
       NgayMuon: NgayMuon ? new Date(NgayMuon) : new Date(),
@@ -256,7 +325,6 @@ exports.createByDocGia = async (req, res, next) => {
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       ChiTietMuon,
       TrangThai: "Chờ duyệt",
-      // Chỉ lưu vào TongTien. KHÔNG CÓ TongThanhToan
       TongTien: tienCocTuFrontend,
       NgayTra: null,
     };

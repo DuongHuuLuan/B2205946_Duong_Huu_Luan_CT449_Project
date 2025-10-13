@@ -103,3 +103,82 @@ exports.deleteAll = async (_req, res, next) => {
     return next(new ApiError(500, "Lỗi khi xóa tất cả Độc giả"));
   }
 };
+
+exports.getProfile = async (req, res, next) => {
+  try {
+    const docGiaService = new DocGiaService(MongoDB.client);
+    const docGia = await docGiaService.findOne({ MaDocGia: req.user.MaDocGia });
+    if (!docGia) return next(new ApiError(404, "Không tìm thấy Độc giả"));
+
+    const { Password, ...userWithoutPassword } = docGia;
+    res.send(userWithoutPassword);
+  } catch (error) {
+    console.error(error);
+    return next(new ApiError(500, "Lỗi khi lấy thông tin profile"));
+  }
+};
+
+exports.updateProfile = async (req, res, next) => {
+  try {
+    console.log(">>> updateProfile called");
+    console.log("USER:", req.user); // <- kiểm tra đây ngay
+    console.log("BODY keys:", Object.keys(req.body || {}));
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.file || req.files);
+
+    if (!req.user || !req.user.MaDocGia) {
+      console.error("No req.user or missing MaDocGia");
+      return next(new ApiError(401, "Không xác thực người dùng"));
+    }
+
+    const docGiaService = new DocGiaService(MongoDB.client);
+    const docGia = await docGiaService.findOne({ MaDocGia: req.user.MaDocGia });
+    if (!docGia) return next(new ApiError(404, "Không tìm thấy Độc giả"));
+
+    const updated = await docGiaService.update(
+      { MaDocGia: req.user.MaDocGia },
+      req.body
+    );
+
+    res.send({ message: "Cập nhật thông tin thành công", updated });
+  } catch (error) {
+    console.error("updateProfile ERROR:", error);
+    // Trong dev trả chi tiết để client/console xem
+    if (process.env.NODE_ENV === "development") {
+      return res
+        .status(500)
+        .json({ message: error.message, stack: error.stack });
+    }
+    return next(new ApiError(500, "Lỗi khi cập nhật profile"));
+  }
+};
+
+exports.getBorrowStats = async (req, res, next) => {
+  try {
+    const db = MongoDB.client.db();
+    const muonColl = db.collection("theodoimuonsach");
+    const ma = req.user.MaDocGia;
+
+    // số đang mượn: NgayTra == null OR not exists
+    const dangMuon = await muonColl.countDocuments({
+      MaDocGia: ma,
+      $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
+    });
+
+    // tổng mượn: tổng record của độc giả
+    const tongMuon = await muonColl.countDocuments({ MaDocGia: ma });
+
+    // quá hạn: đang mượn và NgayHenTra < today
+    const today = new Date();
+    const quaHan = await muonColl.countDocuments({
+      MaDocGia: ma,
+      $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
+      NgayHenTra: { $lt: today },
+    });
+
+    res.json({ dangMuon, tongMuon, quaHan });
+  } catch (err) {
+    console.error("getBorrowStats error:", err);
+    return next(new ApiError(500, "Lỗi lấy thống kê mượn sách"));
+  }
+};

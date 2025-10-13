@@ -1,16 +1,15 @@
 <template>
     <div class="borrow-card">
         <div class="header-status">
-            <span :class="['status-badge', borrow.TrangThai.replace(/\s/g, '-').toLowerCase()]">
+            <span :class="['status-badge', statusClass]">
                 {{ borrow.TrangThai }}
             </span>
-            <span class="borrow-id">Mã Phiếu: {{ borrow._id.substring(0, 8) }}</span>
+            <span class="borrow-id">Mã Phiếu: {{ shortId }}</span>
         </div>
 
         <div class="date-info">
             <p>Ngày Mượn: <strong>{{ formatDate(borrow.NgayMuon) }}</strong></p>
             <p>Hạn Trả: <strong :class="{ 'late-return': isLate }">{{ formatDate(borrow.HanTra) }}</strong></p>
-
             <p v-if="borrow.NgayTra">Ngày Trả: <strong>{{ formatDate(borrow.NgayTra) }}</strong></p>
         </div>
 
@@ -25,26 +24,32 @@
         </div>
 
         <div class="total-cost">
-            Tổng Tiền: <span>{{ formatCurrency(borrow.TongTienHienThi) }}</span>
+            <div class="amounts">
+                <div>Tổng Tiền: <strong>{{ formatCurrency(borrow.TongTien) }}</strong></div>
+                <div v-if="borrow.TienPhat && borrow.TienPhat > 0" class="fine">
+                    Tiền phạt: <strong>{{ formatCurrency(borrow.TienPhat) }}</strong>
+                </div>
+            </div>
+
+            <div class="total-final">
+                Tổng Phải Thanh Toán: <strong>{{ formatCurrency(borrow.TongThanhToan ?? borrow.TongTien) }}</strong>
+            </div>
         </div>
 
-        <button v-if="canRequestReturn" @click="handleRequestReturn(borrow._id)" class="btn-return"
-            :disabled="isSubmitting">
-            {{ isSubmitting ? 'Đang xác nhận...' : 'Xác nhận Đã Trả' }}
-        </button>
+        <div v-if="showStaffNotice" class="info-message staff-note">
+            Xác nhận trả sách sẽ được nhân viên thư viện xử lý. Nếu bạn đã trả sách trực tiếp tại thư viện, vui lòng
+            liên hệ thủ thư để xác nhận.
+        </div>
 
         <div v-else-if="borrow.TrangThai === 'Yêu cầu trả'" class="info-message">
-            Yêu cầu trả sách đang chờ Thủ thư duyệt.
+            Yêu cầu trả sách đang chờ thủ thư duyệt.
         </div>
-
     </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import moment from "moment";
-import Swal from 'sweetalert2';
-import TheoDoiMuonSachService from "@/services/theodoimuonsach.service";
 
 const props = defineProps({
     borrow: {
@@ -53,80 +58,49 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['borrow-updated']);
-const isSubmitting = ref(false);
-
-// Hàm hỗ trợ
 function formatCurrency(amount) {
     return Number(amount || 0).toLocaleString('vi-VN');
 }
-
-// Định dạng ngày tháng
 function formatDate(date) {
     return date ? moment(date).format('DD/MM/YYYY') : 'N/A';
 }
-
 function getBookTitle(maSach) {
     const bookInfo = props.borrow.SachThongTin?.find(s => s.MaSach === maSach);
     return bookInfo ? bookInfo.TenSach : `[Mã sách: ${maSach}]`;
 }
 
-// Computed properties
 const isLate = computed(() => {
     const status = props.borrow.TrangThai;
     if (status !== 'Đang mượn' && status !== 'Trễ hạn') return false;
-
     return moment(props.borrow.HanTra).isBefore(moment(), 'day');
 });
 
-const canRequestReturn = computed(() => {
-    const status = props.borrow.TrangThai;
-    // Nút chỉ xuất hiện nếu đang mượn HOẶC trễ hạn. Bỏ qua Yêu cầu trả
-    return status === 'Đang mượn' || status === 'Trễ hạn';
+const shortId = computed(() => {
+    try {
+        return (props.borrow._id || '').toString().substring(0, 8);
+    } catch {
+        return '';
+    }
 });
 
-// Logic xác nhận trả sách ngay lập tức
-async function handleRequestReturn(borrowId) {
-    const result = await Swal.fire({
-        title: 'Xác nhận Đã Trả Sách?',
-        text: 'Bạn có chắc chắn muốn xác nhận đã trả sách này không? (Hệ thống sẽ ghi nhận ngày trả là hôm nay)',
-        icon: 'warning', // Dùng warning để nhấn mạnh hành động
-        showCancelButton: true,
-        confirmButtonColor: '#10b981',
-        cancelButtonColor: '#ef4444',
-        confirmButtonText: 'Đồng ý',
-        cancelButtonText: 'Hủy bỏ'
-    });
+const statusClass = computed(() => {
+    const map = {
+        'Chờ duyệt': 'cho-duyet',
+        'Đang mượn': 'dang-muon',
+        'Đã trả': 'da-tra',
+        'Trễ hạn': 'tre-han',
+        'Yêu cầu trả': 'yeu-cau-tra'
+    };
+    return (map[props.borrow.TrangThai] || '').toLowerCase();
+});
 
-    if (result.isConfirmed) {
-        isSubmitting.value = true;
-        try {
-            // HỢP NHẤT: Gửi cả TrangThai và NgayTra trong MỘT lần gọi API
-            await TheoDoiMuonSachService.update(borrowId, {
-                TrangThai: 'Đã trả',
-                NgayTra: moment().toISOString(), // Gửi format ISO 8601 để Backend dễ xử lý
-            });
-
-
-            Swal.fire('Thành công', 'Đã xác nhận trả sách thành công! Phiếu mượn đã chuyển sang trạng thái "Đã trả".', 'success');
-
-            // Thông báo cho component cha để tải lại danh sách
-            emit('borrow-updated');
-
-        } catch (error) {
-            console.error("Lỗi xác nhận trả sách:", error);
-            Swal.fire('Thất bại', error.response?.data?.message || 'Không thể xác nhận trả sách. Vui lòng kiểm tra API Backend.', 'error');
-        } finally {
-            isSubmitting.value = false;
-        }
-    }
-}
+const showStaffNotice = computed(() => {
+    return ['Đang mượn', 'Trễ hạn'].includes(props.borrow.TrangThai);
+});
 </script>
 
----
-
 <style scoped>
-/* CSS giữ nguyên từ phiên bản trước */
+/* giữ style cũ + bổ sung .staff-note, .fine */
 .borrow-card {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
@@ -156,7 +130,6 @@ async function handleRequestReturn(borrowId) {
     font-weight: 600;
 }
 
-/* Trạng thái màu sắc */
 .cho-duyet {
     background-color: #fff3cd;
     color: #ff9800;
@@ -181,8 +154,6 @@ async function handleRequestReturn(borrowId) {
     background-color: #cfe2ff;
     color: #0d6efd;
 }
-
-/* Trạng thái mới */
 
 .date-info p {
     margin: 5px 0;
@@ -223,38 +194,27 @@ async function handleRequestReturn(borrowId) {
     font-weight: 600;
     color: #1e293b;
     border-top: 1px dashed #e2e8f0;
-    /* Thêm đường kẻ phân cách */
     padding-top: 10px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
-.total-cost span {
-    color: #6c5ce7;
-    font-size: 18px;
+.total-cost .amounts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.total-cost .fine {
+    color: #dc2626;
     font-weight: 700;
 }
 
-.btn-return {
-    margin-top: 15px;
-    width: 100%;
-    padding: 10px;
-    background-color: #10b981;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s;
-}
-
-.btn-return:hover:not(:disabled) {
-    background-color: #059669;
-}
-
-.btn-return:disabled {
-    background-color: #99f6e4;
-    cursor: not-allowed;
+.total-final {
+    color: #6c5ce7;
+    font-size: 18px;
+    font-weight: 700;
 }
 
 .info-message {
@@ -263,8 +223,18 @@ async function handleRequestReturn(borrowId) {
     margin-top: 15px;
     border-radius: 6px;
     background-color: #cfe2ff;
-    /* Màu thông báo */
     color: #0d6efd;
-    font-size: 0.9em;
+    font-size: 0.95em;
+}
+
+.staff-note {
+    background: #fff7ed;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 600;
 }
 </style>

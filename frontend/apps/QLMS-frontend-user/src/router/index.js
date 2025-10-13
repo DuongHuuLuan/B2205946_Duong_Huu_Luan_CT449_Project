@@ -50,6 +50,12 @@ const routes = [
     component: () => import("@/views/muonsach/MuonSachList.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
+  {
+    path: "/docgia/profile",
+    name: "docgia.profile",
+    component: () => import("@/views/docgia/ProfileView.vue"),
+    meta: { requiresAuth: true, role: "docgia" },
+  },
 ];
 
 const router = createRouter({
