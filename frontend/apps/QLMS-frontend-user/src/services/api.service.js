@@ -1,4 +1,3 @@
-// src/services/api.service.js
 import axios from "axios";
 
 const DOCGIA_TOKEN_KEY = "docgiaToken";
@@ -28,10 +27,12 @@ const getBaseUrl = () => {
     return window.__API_BASE__;
   }
 
+  // default (include /api)
   return "http://localhost:3002/api";
 };
 
 const BASE_URL = getBaseUrl();
+console.log("[DEBUG] API BASE_URL =", BASE_URL);
 
 /* Public API (no token) */
 export const publicApi = axios.create({
@@ -43,7 +44,6 @@ export const publicApi = axios.create({
   timeout: 20000,
 });
 
-/* Default api instance (optional global) */
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -52,45 +52,52 @@ const api = axios.create({
   },
 });
 
-/* Attach token for default api as well */
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem(DOCGIA_TOKEN_KEY);
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-export function createApiClient(prefix = "") {
-  // normalize prefix: '' hoặc bắt đầu bằng '/'
-  const p = !prefix ? "" : prefix.startsWith("/") ? prefix : `/${prefix}`;
-
-  const instance = axios.create({
-    baseURL: `${BASE_URL}${p}`,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    timeout: 20000,
-  });
-
-  // request: gắn token
-  instance.interceptors.request.use(
-    (config) => {
+    try {
       const token = localStorage.getItem(DOCGIA_TOKEN_KEY);
       if (token) {
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
+    } catch (e) {}
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export function createApiClient(prefix = "") {
+  const p = !prefix ? "" : prefix.startsWith("/") ? prefix : `/${prefix}`;
+
+  const instance = axios.create({
+    baseURL: `${BASE_URL}${p}`, // e.g. http://localhost:3002/api + /docgia => /api/docgia
+    headers: {
+      Accept: "application/json",
+    },
+    timeout: 20000,
+  });
+
+  instance.interceptors.request.use(
+    (config) => {
+      try {
+        const token = localStorage.getItem(DOCGIA_TOKEN_KEY);
+        if (token) {
+          config.headers = config.headers || {};
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        if (config.data instanceof FormData) {
+          if (config.headers) {
+            delete config.headers["Content-Type"];
+            delete config.headers["content-type"];
+          }
+        }
+      } catch (e) {}
       return config;
     },
     (err) => Promise.reject(err)
   );
 
-  // response: optional unwrap res.data so services can return data directly
   instance.interceptors.response.use(
     (res) => res?.data ?? res,
     (err) => Promise.reject(err)

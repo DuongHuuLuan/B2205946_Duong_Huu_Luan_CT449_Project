@@ -58,7 +58,6 @@ exports.findAll = async (req, res, next) => {
 // Tìm nhân viên theo ID
 exports.findOne = async (req, res, next) => {
   try {
-    // Admin thì xem được tất cả, nhân viên thường chỉ xem chính mình
     if (req.user.ChucVu !== "Admin" && req.user.MSNV !== req.params.id) {
       return next(
         new ApiError(403, "Bạn không có quyền xem thông tin nhân viên khác")

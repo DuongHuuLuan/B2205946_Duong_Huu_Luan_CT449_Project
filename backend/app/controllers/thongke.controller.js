@@ -1,13 +1,10 @@
 const ApiError = require("../api-error");
 
-// 1. KHAI BÁO BIẾN SERVICE (Chưa gán giá trị)
 let sachService;
 let docGiaService;
 let theoDoiMuonSachService;
 let nhanVienService;
 let nhaXuatBanService;
-
-// Import các Service Class
 const SachService = require("../services/sach.service");
 const DocGiaService = require("../services/docgia.service");
 const TheoDoiMuonSachService = require("../services/theodoimuonsach.service");
@@ -15,8 +12,8 @@ const NhanVienService = require("../services/nhanvien.service");
 const NhaXuatBanService = require("../services/nhaxuatban.service");
 
 /**
- * @description Hàm Khởi tạo Services, được gọi TỪ server.js sau khi CSDL kết nối.
- * @param {object} client Đối tượng kết nối MongoDB client
+ * @description
+ * @param {object} client
  */
 exports.initServices = (client) => {
   if (!client) {
@@ -24,7 +21,7 @@ exports.initServices = (client) => {
       "Lỗi khởi tạo Controller Thống Kê: Đối tượng client kết nối là undefined."
     );
   }
-  // 2. Gán giá trị cho các biến Service SỬ DỤNG client đã kết nối
+
   sachService = new SachService(client);
   docGiaService = new DocGiaService(client);
   theoDoiMuonSachService = new TheoDoiMuonSachService(client);
@@ -37,7 +34,6 @@ exports.initServices = (client) => {
  */
 exports.getGeneralStats = async (req, res, next) => {
   try {
-    // Kiểm tra đảm bảo Service đã được khởi tạo
     if (!sachService) {
       throw new ApiError(503, "Dịch vụ Thống Kê chưa sẵn sàng.");
     }
@@ -68,7 +64,7 @@ exports.getGeneralStats = async (req, res, next) => {
 };
 
 /**
- * @description Thống kê số lượng sách theo từng Nhà Xuất Bản
+ * @description
  */
 exports.getBooksByPublisher = async (req, res, next) => {
   try {
@@ -100,7 +96,7 @@ exports.getBooksByPublisher = async (req, res, next) => {
 };
 
 /**
- * @description Thống kê số lượng nhân viên theo từng chức vụ
+ * @description
  */
 exports.getStaffByRole = async (req, res, next) => {
   try {
@@ -126,12 +122,9 @@ exports.getStaffByRole = async (req, res, next) => {
  */
 exports.getTopBorrowedBooks = async (req, res, next) => {
   try {
-    // Pipeline đã được sửa chữa để xử lý mảng ChiTietMuon
     const pipeline = [
-      // 1. Tách mảng ChiTietMuon ra thành từng tài liệu riêng biệt
       { $unwind: "$ChiTietMuon" },
 
-      // 2. Nhóm theo Mã Sách trong ChiTietMuon và đếm số lượt mượn
       {
         $group: {
           _id: "$ChiTietMuon.MaSach",
@@ -139,13 +132,10 @@ exports.getTopBorrowedBooks = async (req, res, next) => {
         },
       },
 
-      // 3. Sắp xếp giảm dần theo Số Lượt Mượn
       { $sort: { SoLuotMuon: -1 } },
 
-      // 4. Giới hạn Top 10
       { $limit: 10 },
 
-      // 5. Nối (lookup) với collection 'sach' để lấy tên sách
       {
         $lookup: {
           from: "sach",
@@ -154,14 +144,14 @@ exports.getTopBorrowedBooks = async (req, res, next) => {
           as: "sachInfo",
         },
       },
-      // 6. Tách thông tin sách ra
+
       { $unwind: "$sachInfo" },
       {
         $project: {
           _id: 0,
           MaSach: "$_id",
           TenSach: "$sachInfo.TenSach",
-          SoLuotMuon: 1, // Lấy giá trị SoLuotMuon đã tính
+          SoLuotMuon: 1,
         },
       },
     ];

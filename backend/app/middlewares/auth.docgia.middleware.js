@@ -21,7 +21,6 @@ const verifyToken = (req, res, next) => {
 
 const authorizeRoleDocGia = () => {
   return (req, res, next) => {
-    // Độc giả chỉ cần kiểm tra xem họ có đăng nhập hay không (req.user tồn tại)
     if (!req.user) {
       return res
         .status(403)

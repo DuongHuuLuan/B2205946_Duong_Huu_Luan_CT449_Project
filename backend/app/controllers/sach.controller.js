@@ -104,13 +104,11 @@ exports.update = async (req, res, next) => {
   }
 };
 
-// Xóa sách theo ID (có kiểm tra ràng buộc mượn sách)
 exports.delete = async (req, res, next) => {
   try {
     const sachService = new SachService(MongoDB.client);
     const sachId = req.params.id;
 
-    // Tìm sách trước để lấy MaSach
     const sach = await sachService.findById(sachId);
     if (!sach) {
       return next(new ApiError(404, "Không tìm thấy sách để xóa"));
@@ -118,9 +116,8 @@ exports.delete = async (req, res, next) => {
 
     const theoDoiMuonSach = MongoDB.client.db().collection("theodoimuonsach");
 
-    // Kiểm tra xem sách có đang được mượn chưa trả không
     const isBorrowed = await theoDoiMuonSach.findOne({
-      "ChiTietMuon.MaSach": sach.MaSach, // liên kết qua MaSach
+      "ChiTietMuon.MaSach": sach.MaSach,
       $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
     });
 
@@ -130,7 +127,6 @@ exports.delete = async (req, res, next) => {
       );
     }
 
-    // Nếu không bị ràng buộc thì xóa sách
     const document = await sachService.delete(sachId);
 
     return res.send({
@@ -142,7 +138,6 @@ exports.delete = async (req, res, next) => {
   }
 };
 
-// Xóa toàn bộ sách
 exports.deleteAll = async (_req, res, next) => {
   try {
     const sachService = new SachService(MongoDB.client);
@@ -156,8 +151,7 @@ exports.deleteAll = async (_req, res, next) => {
     return next(new ApiError(500, "Lỗi khi xóa toàn bộ sách"));
   }
 };
-//độc giả
-// Lấy danh sách sách có thể mượn (SoQuyen > 0)
+
 exports.findAvailable = async (req, res, next) => {
   try {
     const sachService = new SachService(MongoDB.client);

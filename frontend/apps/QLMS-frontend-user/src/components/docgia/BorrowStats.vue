@@ -4,25 +4,28 @@
 
         <div class="stats-grid">
             <div class="stat">
-                <div class="num">{{ normalized.currentBorrowed }}</div>
+                <div class="num">{{ formatNumber(normalized.currentBorrowed) }}</div>
                 <div class="label">Đang mượn</div>
             </div>
 
             <div class="stat">
-                <div class="num">{{ normalized.totalBorrowed }}</div>
+                <div class="num">{{ formatNumber(normalized.totalBorrowed) }}</div>
                 <div class="label">Tổng mượn</div>
             </div>
 
             <div class="stat">
-                <div class="num">{{ normalized.overdueCount }}</div>
+                <div class="num">{{ formatNumber(normalized.overdueCount) }}</div>
                 <div class="label">Quá hạn</div>
             </div>
         </div>
 
-        <!-- Debug nhỏ: hiện khi muốn (bật bằng prop debug=true từ parent) -->
         <div v-if="debug" class="debug-box">
             <strong>Raw stats prop:</strong>
             <pre>{{ stats }}</pre>
+        </div>
+
+        <div v-if="loading" class="debug-box">
+            Đang tải...
         </div>
     </div>
 </template>
@@ -32,10 +35,11 @@ import { computed } from "vue";
 
 const props = defineProps({
     stats: { type: Object, default: () => ({}) },
-    debug: { type: Boolean, default: false }, // set true để hiện raw data
+    debug: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
 });
 
-// helper: lấy giá trị theo nhiều tên có thể có
+// lấy giá trị theo nhiều tên có thể có (hỗ trợ backend cũ/ mới)
 const getFirst = (obj, keys) => {
     if (!obj) return 0;
     for (const k of keys) {
@@ -64,6 +68,7 @@ const normalized = computed(() => {
             "tongSach",
             "total",
             "tong_sach_da_muon",
+            "tongMuon",
         ]),
         overdueCount: getFirst(s, [
             "overdueCount",
@@ -72,12 +77,23 @@ const normalized = computed(() => {
             "overdue",
             "quaHan",
             "quahan",
+            "qua_han",
         ]),
     };
 });
+
+// format number (nhỏ gọn)
+const formatNumber = (n) => {
+    try {
+        return Number(n).toLocaleString();
+    } catch {
+        return n ?? 0;
+    }
+};
 </script>
 
 <style scoped>
+/* giữ nguyên style cũ */
 .card {
     background: white;
     border-radius: 12px;
@@ -111,7 +127,6 @@ const normalized = computed(() => {
     margin-top: 6px;
 }
 
-/* debug */
 .debug-box {
     margin-top: 12px;
     padding: 10px;

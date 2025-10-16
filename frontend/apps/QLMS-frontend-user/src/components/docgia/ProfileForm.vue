@@ -1,17 +1,16 @@
-<!-- src/components/ProfileForm.vue -->
 <template>
     <div class="card profile-form">
         <h3>Chỉnh sửa thông tin</h3>
 
-        <form @submit.prevent="onSubmit" class="form-grid">
+        <form @submit.prevent="onSubmit" class="form-grid" novalidate>
             <div class="field">
                 <label>Họ đệm</label>
                 <input v-model="form.HoLot" type="text" />
             </div>
 
             <div class="field">
-                <label>Tên</label>
-                <input v-model="form.Ten" type="text" />
+                <label>Tên <span style="color:#b91c1c">*</span></label>
+                <input v-model="form.Ten" type="text" required />
             </div>
 
             <div class="field">
@@ -60,7 +59,15 @@ const store = useDocGiaStore();
 
 const isoDate = (s) => {
     if (!s) return "";
-    return s.split?.("T")?.[0] ?? s;
+    if (typeof s === "string") return s.split?.("T")?.[0] ?? s;
+    // nếu là Date object
+    try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+            return d.toISOString().split("T")[0];
+        }
+    } catch { }
+    return "";
 };
 
 const form = reactive({
@@ -76,7 +83,6 @@ let saving = false;
 let error = null;
 let success = null;
 
-// watch for initialProfile changes (e.g., after fetchProfile)
 watch(
     () => props.initialProfile,
     (np) => {
@@ -107,21 +113,29 @@ async function onSubmit() {
     saving = true;
     error = null;
     success = null;
+
+    // simple client-side validation
+    if (!form.Ten || String(form.Ten).trim().length === 0) {
+        error = "Tên không được để trống";
+        saving = false;
+        return;
+    }
+
     try {
         const payload = {
-            HoLot: form.HoLot,
-            Ten: form.Ten,
-            NgaySinh: form.NgaySinh,
-            Phai: form.Phai,
-            DienThoai: form.DienThoai,
-            DiaChi: form.DiaChi,
+            HoLot: form.HoLot || undefined,
+            Ten: form.Ten || undefined,
+            NgaySinh: form.NgaySinh || undefined, // 'YYYY-MM-DD' is fine
+            Phai: form.Phai || undefined,
+            DienThoai: form.DienThoai || undefined,
+            DiaChi: form.DiaChi || undefined,
         };
         const updated = await store.updateProfile(payload);
         success = "Cập nhật thành công";
         emit("saved", updated);
     } catch (err) {
         console.error(err);
-        error = store.error || "Cập nhật thất bại. Vui lòng thử lại.";
+        error = store.error || (err?.response?.data?.message ?? "Cập nhật thất bại. Vui lòng thử lại.");
     } finally {
         saving = false;
     }
@@ -129,6 +143,7 @@ async function onSubmit() {
 </script>
 
 <style scoped>
+/* giữ nguyên style cũ */
 .card {
     background: white;
     border-radius: 12px;
@@ -204,7 +219,6 @@ async function onSubmit() {
     margin-top: 8px;
 }
 
-/* responsive */
 @media (max-width: 720px) {
     .form-grid {
         grid-template-columns: 1fr;

@@ -1,3 +1,4 @@
+// backend/app/services/docgia.service.js
 const { ObjectId } = require("mongodb");
 const bcrypt = require("bcrypt");
 
@@ -16,6 +17,7 @@ class DocGiaService {
       DiaChi: payload.DiaChi,
       DienThoai: payload.DienThoai,
       Password: payload.Password,
+      // avatar: payload.avatar,
     };
 
     Object.keys(docgia).forEach(
@@ -31,7 +33,7 @@ class DocGiaService {
     return result;
   }
 
-  async find(filter) {
+  async find(filter = {}) {
     const cursor = await this.DocGia.find(filter);
     return await cursor.toArray();
   }
@@ -46,32 +48,47 @@ class DocGiaService {
     return await this.DocGia.findOne(filter);
   }
 
-  async update(id, payload) {
+  async update(idOrFilter, payload) {
     let filter;
-
-    if (typeof id === "object") {
-      filter = id; // ví dụ { MaDocGia: "DG001" }
+    if (typeof idOrFilter === "object" && !ObjectId.isValid(idOrFilter)) {
+      filter = idOrFilter;
+    } else if (typeof idOrFilter === "string" && ObjectId.isValid(idOrFilter)) {
+      filter = { _id: new ObjectId(idOrFilter) };
+    } else if (
+      typeof idOrFilter === "object" &&
+      ObjectId.isValid(idOrFilter._id)
+    ) {
+      filter = idOrFilter;
     } else {
-      filter = {
-        _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
-      };
+      filter = idOrFilter;
     }
 
     const updateData = this.extractDocGiaData(payload);
 
-    // Nếu có Password thì hash lại
     if (updateData.Password) {
       const salt = await bcrypt.genSalt(10);
       updateData.Password = await bcrypt.hash(updateData.Password, salt);
     }
+    let result;
+    try {
+      result = await this.DocGia.findOneAndUpdate(
+        filter,
+        { $set: updateData },
+        { returnDocument: "after" } // modern driver
+      );
+    } catch (err) {
+      if (err && /returnDocument|unknown option/i.test(err.message)) {
+        result = await this.DocGia.findOneAndUpdate(
+          filter,
+          { $set: updateData },
+          { returnOriginal: false }
+        );
+      } else {
+        throw err;
+      }
+    }
 
-    const result = await this.DocGia.findOneAndUpdate(
-      filter,
-      { $set: updateData },
-      { returnDocument: "after" }
-    );
-
-    return result.value;
+    return result?.value ?? null;
   }
 
   async delete(id) {

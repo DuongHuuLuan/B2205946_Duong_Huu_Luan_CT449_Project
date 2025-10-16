@@ -1,39 +1,43 @@
+// src/services/docgia.service.js
 import { createApiClient, publicApi } from "./api.service";
 const PREFIX = "/docgia";
 
 class DocGiaService {
   constructor(prefix) {
-    // private API (có interceptor gắn token)
     this.privateApi = createApiClient(prefix);
     this.publicPath = prefix;
   }
 
-  // LOGIN / REGISTER dùng publicApi (không cần token)
   async login(data) {
     const res = await publicApi.post(`${this.publicPath}/login`, data);
-    return res.data ?? res;
+    return res;
   }
 
   async register(data) {
     const res = await publicApi.post(`${this.publicPath}/register`, data);
-    return res.data ?? res;
+    return res;
   }
+
   async getProfile() {
-    return this.privateApi.get("/profile/me");
+    const res = await this.privateApi.get("/profile/me");
+    return res;
   }
 
   async updateProfile(payload) {
-    return this.privateApi.put("/profile/update", payload);
+    const res = await this.privateApi.put("/profile/update", payload);
+    return res;
   }
 
   async getBorrowStats() {
-    return this.privateApi.get("/profile/stats");
+    const res = await this.privateApi.get("/profile/stats");
+    return res;
   }
 
   async uploadAvatar(formData) {
-    return this.privateApi.post("/profile/avatar", formData, {
+    const res = await this.privateApi.post("/profile/avatar", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    return res;
   }
 }
 

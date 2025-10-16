@@ -121,7 +121,7 @@ exports.getProfile = async (req, res, next) => {
 exports.updateProfile = async (req, res, next) => {
   try {
     console.log(">>> updateProfile called");
-    console.log("USER:", req.user); // <- kiểm tra đây ngay
+    console.log("USER:", req.user); // kiểm tra
     console.log("BODY keys:", Object.keys(req.body || {}));
     console.log("BODY:", req.body);
     console.log("FILES:", req.file || req.files);
@@ -131,19 +131,35 @@ exports.updateProfile = async (req, res, next) => {
       return next(new ApiError(401, "Không xác thực người dùng"));
     }
 
-    const docGiaService = new DocGiaService(MongoDB.client);
-    const docGia = await docGiaService.findOne({ MaDocGia: req.user.MaDocGia });
-    if (!docGia) return next(new ApiError(404, "Không tìm thấy Độc giả"));
+    const db = MongoDB.client.db();
+    const docGiaColl = db.collection("docgia");
 
-    const updated = await docGiaService.update(
+    // Chuẩn hóa payload: loại bỏ fields không cho phép update (vd: Password, MaDocGia)
+    const payload = { ...req.body };
+    delete payload.Password;
+    delete payload.MaDocGia;
+    // chuyển NgaySinh nếu là chuỗi YYYY-MM-DD sang Date (tuỳ bạn muốn lưu kiểu Date)
+    if (payload.NgaySinh && typeof payload.NgaySinh === "string") {
+      const d = new Date(payload.NgaySinh);
+      if (!isNaN(d.getTime())) payload.NgaySinh = d;
+    }
+
+    // Update theo MaDocGia và trả về doc sau khi update
+    const result = await docGiaColl.findOneAndUpdate(
       { MaDocGia: req.user.MaDocGia },
-      req.body
+      { $set: payload },
+      { returnDocument: "after" } // trả về document sau khi cập nhật
     );
 
-    res.send({ message: "Cập nhật thông tin thành công", updated });
+    if (!result.value) return next(new ApiError(404, "Không tìm thấy Độc giả"));
+
+    const { Password, ...userWithoutPassword } = result.value;
+    return res.send({
+      message: "Cập nhật thông tin thành công",
+      profile: userWithoutPassword,
+    });
   } catch (error) {
     console.error("updateProfile ERROR:", error);
-    // Trong dev trả chi tiết để client/console xem
     if (process.env.NODE_ENV === "development") {
       return res
         .status(500)
@@ -153,30 +169,52 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
+// sửa getBorrowStats — trả về số sách (camelCase) để frontend dễ dùng
 exports.getBorrowStats = async (req, res, next) => {
   try {
     const db = MongoDB.client.db();
     const muonColl = db.collection("theodoimuonsach");
     const ma = req.user.MaDocGia;
 
-    // số đang mượn: NgayTra == null OR not exists
-    const dangMuon = await muonColl.countDocuments({
-      MaDocGia: ma,
-      $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
-    });
+    // lấy tất cả phiếu mượn (để tính số sách), chỉ phiếu liên quan MaDocGia
+    const docs = await muonColl.find({ MaDocGia: ma }).toArray();
 
-    // tổng mượn: tổng record của độc giả
-    const tongMuon = await muonColl.countDocuments({ MaDocGia: ma });
+    let currentBorrowed = 0; // số sách đang mượn
+    let totalBorrowed = 0; // tổng sách đã mượn (tất cả phiếu)
+    let overdueCount = 0; // số sách quá hạn
 
-    // quá hạn: đang mượn và NgayHenTra < today
     const today = new Date();
-    const quaHan = await muonColl.countDocuments({
-      MaDocGia: ma,
-      $or: [{ NgayTra: null }, { NgayTra: { $exists: false } }],
-      NgayHenTra: { $lt: today },
-    });
 
-    res.json({ dangMuon, tongMuon, quaHan });
+    for (const d of docs) {
+      const chiTiet = Array.isArray(d.ChiTietMuon) ? d.ChiTietMuon : [];
+      const numBooks = chiTiet.reduce(
+        (s, it) => s + (Number(it.SoLuong) || 1),
+        0
+      );
+      totalBorrowed += numBooks;
+
+      // Xác định "đang mượn": khi NgayTra === null/không tồn tại OR TrangThai === 'Đang mượn'
+      const isStillBorrowed =
+        d.NgayTra == null ||
+        d.NgayTra === undefined ||
+        d.TrangThai === "Đang mượn";
+      if (isStillBorrowed) {
+        currentBorrowed += numBooks;
+      }
+
+      // dùng trường HanTra (tên chuẩn) để so sánh quá hạn
+      const hanTra = d.HanTra ? new Date(d.HanTra) : null;
+      if (hanTra && hanTra < today && isStillBorrowed) {
+        overdueCount += numBooks;
+      }
+    }
+
+    // trả về tên trường dễ dùng ở frontend (camelCase)
+    res.json({
+      currentBorrowed,
+      totalBorrowed,
+      overdueCount,
+    });
   } catch (err) {
     console.error("getBorrowStats error:", err);
     return next(new ApiError(500, "Lỗi lấy thống kê mượn sách"));

@@ -3,7 +3,7 @@
         <div class="top">
             <div class="avatar-wrap">
                 <div class="avatar-ring">
-                    <img v-if="profile?.avatar" :src="profile.avatar" alt="avatar" class="avatar" />
+                    <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="avatar" />
                     <div v-else class="avatar-empty">{{ initials }}</div>
                 </div>
             </div>
@@ -34,6 +34,12 @@ const props = defineProps({ profile: { type: Object, default: null } });
 const emit = defineEmits(["avatar-uploaded", "edit"]);
 const fileInput = ref(null);
 
+// avatar có thể ở nhiều tên khác nhau
+const avatarUrl = computed(() => {
+    const p = props.profile || {};
+    return p.avatar || p.Avatar || p.avatarUrl || p.AvatarUrl || p.AvatarURL || null;
+});
+
 const fullName = computed(() => {
     if (!props.profile) return "—";
     return `${props.profile.HoLot ?? ""} ${props.profile.Ten ?? ""}`.trim();
@@ -47,8 +53,8 @@ const initials = computed(() => {
 const formattedDate = computed(() => {
     if (!props.profile?.NgaySinh) return "—";
     const raw = props.profile.NgaySinh;
-    const d = new Date(raw);
-    return isNaN(d.getTime()) ? raw : d.toLocaleDateString();
+    const d = typeof raw === "string" ? new Date(raw) : raw;
+    return isNaN(new Date(d).getTime()) ? raw : new Date(d).toLocaleDateString();
 });
 
 function openFile() {
@@ -62,6 +68,7 @@ function onFileChange(e) {
 </script>
 
 <style scoped>
+/* giữ nguyên style cũ */
 .card {
     background: white;
     border-radius: 12px;
@@ -112,7 +119,6 @@ function onFileChange(e) {
     font-size: 20px;
 }
 
-/* info */
 .info .name {
     margin: 0;
     font-size: 18px;
@@ -125,7 +131,6 @@ function onFileChange(e) {
     font-size: 13px;
 }
 
-/* meta */
 .meta {
     margin-top: 12px;
     border-top: 1px dashed #edf2f7;
@@ -143,7 +148,6 @@ function onFileChange(e) {
     color: #6b7280;
 }
 
-/* actions */
 .card-actions {
     display: flex;
     gap: 8px;
@@ -165,14 +169,13 @@ function onFileChange(e) {
 
 .btn-outline {
     background: transparent;
-    border: 1px solid #e6e9f2;
+    border: 1px solid #e6eef8;
     padding: 8px 12px;
     border-radius: 8px;
     color: #374151;
     cursor: pointer;
 }
 
-/* utilities */
 .visually-hidden {
     display: none;
 }

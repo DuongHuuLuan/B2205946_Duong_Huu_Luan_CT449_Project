@@ -5,9 +5,6 @@ const ApiError = require("../api-error");
 const moment = require("moment");
 const { ObjectId } = require("mongodb");
 
-/* Helper: tính số ngày trễ theo UTC (không lệch do giờ địa phương)
-   Trả về số ngày > 0 (nếu không trễ trả 0).
-*/
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 function overdueDays(hanTra, now = new Date()) {
   if (!hanTra) return 0;
@@ -28,8 +25,6 @@ function overdueDays(hanTra, now = new Date()) {
   const diffDays = Math.floor((utcNow - utcHan) / MS_PER_DAY);
   return diffDays > 0 ? diffDays : 0;
 }
-
-// ====== Controllers ======
 
 exports.create = async (req, res, next) => {
   if (
@@ -174,14 +169,12 @@ exports.deleteAll = async (_req, res, next) => {
   }
 };
 
-// ====== Độc giả xem các sách mình đang mượn (cập nhật tiền phạt nếu cần) ======
 exports.findByDocGia = async (req, res, next) => {
   try {
     const MaDocGia = req.user.MaDocGia;
     const db = MongoDB.client.db();
     const collection = db.collection("theodoimuonsach");
 
-    // Lấy dữ liệu có join thông tin sách
     let documents = await collection
       .aggregate([
         { $match: { MaDocGia: MaDocGia } },
@@ -202,27 +195,23 @@ exports.findByDocGia = async (req, res, next) => {
       ])
       .toArray();
 
-    // Post-process: compute/update TienPhat & TongThanhToan when necessary
-    const FINE_PER_DAY = 10000; // thay đổi nếu cần
+    const FINE_PER_DAY = 10000;
     const today = new Date();
 
     for (const doc of documents) {
       try {
         const hanTra = doc.HanTra ? new Date(doc.HanTra) : null;
 
-        // tính tổng số cuốn (sum SoLuong nếu có)
         const numBooks = Array.isArray(doc.ChiTietMuon)
           ? doc.ChiTietMuon.reduce((s, it) => s + (it.SoLuong ?? 1), 0)
           : 1;
 
-        // tính số ngày trễ theo helper chuẩn
         const soNgayTre = overdueDays(hanTra, today);
 
         const tienPhat =
           soNgayTre > 0 ? soNgayTre * FINE_PER_DAY * numBooks : 0;
         const tongThanh = (doc.TongTien ?? 0) + tienPhat;
 
-        // cần update DB nếu giá trị khác hoặc nếu đang ở trạng thái Đang mượn nhưng đã trễ
         const needDbUpdate =
           (doc.TienPhat ?? 0) !== tienPhat ||
           (doc.TongThanhToan ?? 0) !== tongThanh ||
@@ -240,7 +229,6 @@ exports.findByDocGia = async (req, res, next) => {
             }
           );
 
-          // reflect to returned object
           doc.TrangThai = soNgayTre > 0 ? "Trễ hạn" : doc.TrangThai;
           doc.TienPhat = tienPhat;
           doc.TongThanhToan = tongThanh;
@@ -249,7 +237,6 @@ exports.findByDocGia = async (req, res, next) => {
           doc.TongThanhToan = doc.TongThanhToan ?? doc.TongTien ?? 0;
         }
 
-        // Format ngày cho client
         doc.NgayMuon = doc.NgayMuon
           ? moment(doc.NgayMuon).format("YYYY-MM-DD")
           : null;

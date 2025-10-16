@@ -2,7 +2,6 @@ const NhaXuatBanService = require("../services/nhaxuatban.service");
 const MongoDB = require("../utils/mongodb.util");
 const ApiError = require("../api-error");
 
-// Tạo NXB mới
 exports.create = async (req, res, next) => {
   if (!req.body?.TenNXB) {
     return next(new ApiError(400, "Tên NXB không được để trống"));
@@ -17,7 +16,6 @@ exports.create = async (req, res, next) => {
   }
 };
 
-// Lấy tất cả NXB (thêm số lượng sách bookCount)
 exports.findAll = async (req, res, next) => {
   try {
     const db = MongoDB.client.db();
@@ -48,7 +46,6 @@ exports.findAll = async (req, res, next) => {
   }
 };
 
-// Lấy NXB theo ID
 exports.findOne = async (req, res, next) => {
   try {
     const nxbService = new NhaXuatBanService(MongoDB.client);
@@ -63,7 +60,6 @@ exports.findOne = async (req, res, next) => {
   }
 };
 
-// Cập nhật NXB
 exports.update = async (req, res, next) => {
   if (Object.keys(req.body).length === 0) {
     return next(new ApiError(400, "Dữ liệu cập nhật không được trống"));
@@ -81,19 +77,17 @@ exports.update = async (req, res, next) => {
     return next(new ApiError(500, `Lỗi khi cập nhật NXB id=${req.params.id}`));
   }
 };
-// Xoá NXB theo ID (có kiểm tra ràng buộc sách)
+
 exports.delete = async (req, res, next) => {
   try {
     const nxbService = new NhaXuatBanService(MongoDB.client);
     const nxbId = req.params.id;
 
-    // Tìm NXB
     const nxb = await nxbService.findById(nxbId);
     if (!nxb) {
       return next(new ApiError(404, "Không tìm thấy Nhà Xuất Bản để xoá"));
     }
 
-    // Kiểm tra có sách nào thuộc NXB này không
     const sachCollection = MongoDB.client.db().collection("sach");
     const hasBook = await sachCollection.findOne({ MaNXB: nxb.MaNXB });
 
@@ -106,7 +100,6 @@ exports.delete = async (req, res, next) => {
       );
     }
 
-    // Nếu không còn ràng buộc thì xoá
     const document = await nxbService.delete(nxbId);
     return res.send({
       message: "Xoá Nhà Xuất Bản thành công",
@@ -119,7 +112,6 @@ exports.delete = async (req, res, next) => {
   }
 };
 
-// Xóa tất cả NXB
 exports.deleteAll = async (_req, res, next) => {
   try {
     const nxbService = new NhaXuatBanService(MongoDB.client);

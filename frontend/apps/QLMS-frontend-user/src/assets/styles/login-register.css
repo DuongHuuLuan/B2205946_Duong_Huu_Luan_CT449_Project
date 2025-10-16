@@ -22,7 +22,6 @@
     border-radius: 20px;
     background: linear-gradient(135deg, #6ee7b7, #3b82f6);
     z-index: 0;
-
     overflow-y: auto;
     padding: 20px 0;
 }
