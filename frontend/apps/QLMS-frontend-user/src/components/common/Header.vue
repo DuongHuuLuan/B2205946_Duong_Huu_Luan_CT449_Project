@@ -17,14 +17,13 @@
                 <RouterLink class="hv-link" :class="{ active: routeName === 'home' }" to="/">Trang chủ</RouterLink>
                 <RouterLink class="hv-link" :class="{ active: routeName === 'sach.list' }" to="/sach">Sách</RouterLink>
 
-                <!-- Link đến profile độc giả (chỉ hiển thị khi là Độc giả đã đăng nhập) -->
                 <RouterLink v-if="isAuthenticated && isDocGia" class="hv-link"
                     :class="{ active: routeName === 'docgia.profile' }" :to="{ name: 'docgia.profile' }">
                     Hồ sơ của tôi
                 </RouterLink>
 
-                <RouterLink v-if="isAuthenticated && isDocGia" class="hv-link" to="/reader/borrowed"
-                    :class="{ active: routeName === 'borrowed.list' }">
+                <RouterLink v-if="isAuthenticated && isDocGia" class="hv-link"
+                    :class="{ active: routeName === 'borrowed.list' }" to="/reader/borrowed">
                     Phiếu Mượn
                 </RouterLink>
 
@@ -39,24 +38,18 @@
 
                 <template v-else>
                     <div class="hv-user">
-                        <!-- Click avatar -> đến profile (nếu là độc giả) -->
                         <RouterLink v-if="isDocGia" :to="{ name: 'docgia.profile' }" class="hv-avatar-link"
                             title="Xem hồ sơ">
                             <div class="hv-avatar">{{ userInitial }}</div>
                         </RouterLink>
-
-                        <!-- Nếu không phải độc giả vẫn show avatar không link -->
                         <div v-else class="hv-avatar">{{ userInitial }}</div>
 
                         <div class="hv-userinfo">
-                            <!-- Tên dẫn tới profile nếu là độc giả -->
                             <RouterLink v-if="isDocGia" :to="{ name: 'docgia.profile' }" class="hv-name-link"
                                 title="Xem hồ sơ">
                                 <div class="hv-name">{{ userDisplay }}</div>
                                 <div class="hv-role">{{ userRole }}</div>
                             </RouterLink>
-
-                            <!-- Nếu không phải độc giả, chỉ show tên/role (nhân viên) -->
                             <div v-else>
                                 <div class="hv-name">{{ userDisplay }}</div>
                                 <div class="hv-role">{{ userRole }}</div>
@@ -87,7 +80,6 @@ const mobileOpen = ref(false);
 const isAuthenticated = computed(() => auth.isLoggedIn);
 const user = computed(() => auth.user || {});
 
-// LOGIC MỚI CHO TÊN: Ưu tiên HoLot + Ten, sau đó là MaDocGia
 const userDisplay = computed(() => {
     if (user.value?.HoLot && user.value?.Ten) {
         return `${user.value.HoLot} ${user.value.Ten}`;
@@ -95,18 +87,14 @@ const userDisplay = computed(() => {
     return user.value?.HoTenNV || user.value?.MaDocGia || "Người dùng";
 });
 
-// LOGIC MỚI CHO INITIAL: Lấy ký tự đầu tiên của Ten hoặc MaDocGia
 const userInitial = computed(() =>
     (user.value?.Ten || user.value?.MaDocGia || "?").charAt(0).toUpperCase()
 );
 
-// Xác định Độc giả bằng cách kiểm tra sự tồn tại của MaDocGia
 const isDocGia = computed(() => !!user.value?.MaDocGia);
 
-// LOGIC VAI TRÒ: Nếu là Độc giả (có MaDocGia) thì trả về "Độc giả", nếu không thì lấy ChucVu (cho nhân viên)
 const userRole = computed(() => (isDocGia.value ? "Độc giả" : (user.value?.ChucVu || "")));
 
-// Logic kiểm tra Staff (Nhân viên/Admin) dựa vào ChucVu
 const isStaff = computed(() =>
     ["admin", "quanly", "thuthu", "hotro"].includes((user.value?.ChucVu || "").toLowerCase())
 );

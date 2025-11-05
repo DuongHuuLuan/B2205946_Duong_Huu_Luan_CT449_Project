@@ -60,7 +60,6 @@ const store = useDocGiaStore();
 const isoDate = (s) => {
     if (!s) return "";
     if (typeof s === "string") return s.split?.("T")?.[0] ?? s;
-    // nếu là Date object
     try {
         const d = new Date(s);
         if (!isNaN(d.getTime())) {
@@ -114,7 +113,6 @@ async function onSubmit() {
     error = null;
     success = null;
 
-    // simple client-side validation
     if (!form.Ten || String(form.Ten).trim().length === 0) {
         error = "Tên không được để trống";
         saving = false;
@@ -125,7 +123,7 @@ async function onSubmit() {
         const payload = {
             HoLot: form.HoLot || undefined,
             Ten: form.Ten || undefined,
-            NgaySinh: form.NgaySinh || undefined, // 'YYYY-MM-DD' is fine
+            NgaySinh: form.NgaySinh || undefined,
             Phai: form.Phai || undefined,
             DienThoai: form.DienThoai || undefined,
             DiaChi: form.DiaChi || undefined,
@@ -143,23 +141,29 @@ async function onSubmit() {
 </script>
 
 <style scoped>
-/* giữ nguyên style cũ */
 .card {
-    background: white;
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
 }
 
 .profile-form h3 {
-    margin: 0 0 12px;
-    font-size: 18px;
+    margin: 0 0 16px;
+    font-size: 20px;
+    color: #1e293b;
+    font-weight: 700;
 }
 
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 16px;
 }
 
 .field {
@@ -172,56 +176,101 @@ async function onSubmit() {
 }
 
 .field label {
-    font-size: 13px;
-    color: #374151;
-    margin-bottom: 6px;
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
 .field input,
 .field select {
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid #e6eef8;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #e0e7ff;
     background: #fafcff;
+    font-size: 14px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.field input:focus,
+.field select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
 }
 
 .actions {
     grid-column: 1 / -1;
     display: flex;
-    gap: 10px;
-    margin-top: 6px;
+    gap: 12px;
+    margin-top: 16px;
 }
 
 .btn-primary {
     background: linear-gradient(90deg, #2563eb, #7c3aed);
     color: white;
-    padding: 10px 14px;
-    border-radius: 8px;
+    padding: 12px 18px;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(90deg, #1d4ed8, #6b21a8);
+}
+
+.btn-primary:disabled {
+    background: #93c5fd;
+    cursor: not-allowed;
 }
 
 .btn-outline {
     background: transparent;
-    border: 1px solid #e6eef8;
-    padding: 10px 14px;
-    border-radius: 8px;
+    border: 1px solid #e0e7ff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    color: #1e293b;
     cursor: pointer;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-outline:hover {
+    transform: translateY(-2px);
+    border-color: #2563eb;
+    color: #2563eb;
 }
 
 .form-error {
     color: #b91c1c;
-    margin-top: 8px;
+    margin-top: 12px;
+    font-size: 14px;
 }
 
 .form-success {
     color: #065f46;
-    margin-top: 8px;
+    margin-top: 12px;
+    font-size: 14px;
 }
 
 @media (max-width: 720px) {
     .form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .field input,
+    .field select {
+        padding: 10px 12px;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .btn-primary,
+    .btn-outline {
+        width: 100%;
     }
 }
 </style>

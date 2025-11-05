@@ -34,7 +34,6 @@ const props = defineProps({ profile: { type: Object, default: null } });
 const emit = defineEmits(["avatar-uploaded", "edit"]);
 const fileInput = ref(null);
 
-// avatar có thể ở nhiều tên khác nhau
 const avatarUrl = computed(() => {
     const p = props.profile || {};
     return p.avatar || p.Avatar || p.avatarUrl || p.AvatarUrl || p.AvatarURL || null;
@@ -68,112 +67,139 @@ function onFileChange(e) {
 </script>
 
 <style scoped>
-/* giữ nguyên style cũ */
 .card {
-    background: white;
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(16, 24, 40, 0.12);
 }
 
 .profile-card .top {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed #e0e7ff;
 }
 
 .avatar-wrap {
-    width: 96px;
+    width: 100px;
 }
 
 .avatar-ring {
-    width: 96px;
-    height: 96px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.12), rgba(37, 99, 235, 0.08));
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
     padding: 6px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
 }
 
 .avatar {
-    width: 84px;
-    height: 84px;
+    width: 88px;
+    height: 88px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid white;
+    border: 4px solid #ffffff;
     box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+    transition: transform 0.3s ease;
+}
+
+.avatar:hover {
+    transform: scale(1.05);
 }
 
 .avatar-empty {
-    width: 84px;
-    height: 84px;
+    width: 88px;
+    height: 88px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #e6e9f2;
-    color: #475569;
+    background: linear-gradient(135deg, #e0e7ff, #f3f4f6);
+    color: #2563eb;
     font-weight: 700;
-    font-size: 20px;
+    font-size: 22px;
+    text-transform: uppercase;
 }
 
 .info .name {
     margin: 0;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
+    color: #1e293b;
 }
 
 .muted {
-    color: #6b7280;
+    color: #64748b;
     margin: 4px 0;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .meta {
-    margin-top: 12px;
-    border-top: 1px dashed #edf2f7;
-    padding-top: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
 }
 
 .meta-row {
     display: flex;
     justify-content: space-between;
     font-size: 14px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    color: #1e293b;
 }
 
 .label {
-    color: #6b7280;
+    color: #64748b;
+    font-weight: 500;
 }
 
 .card-actions {
     display: flex;
-    gap: 8px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed #e0e7ff;
 }
 
 .btn-primary {
     background: linear-gradient(90deg, #2563eb, #7c3aed);
     color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 10px 16px;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
+    transition: transform 0.3s ease, background 0.3s ease;
 }
 
 .btn-primary:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    background: linear-gradient(90deg, #1d4ed8, #6b21a8);
 }
 
 .btn-outline {
     background: transparent;
-    border: 1px solid #e6eef8;
-    padding: 8px 12px;
-    border-radius: 8px;
-    color: #374151;
+    border: 1px solid #e0e7ff;
+    padding: 10px 16px;
+    border-radius: 10px;
+    color: #1e293b;
     cursor: pointer;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.btn-outline:hover {
+    transform: translateY(-2px);
+    border-color: #2563eb;
+    color: #2563eb;
 }
 
 .visually-hidden {

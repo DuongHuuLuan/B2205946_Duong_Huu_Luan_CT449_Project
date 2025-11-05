@@ -1,10 +1,12 @@
 <template>
-    <div class="book-list">
-        <SearchBar @search="onSearch" />
+    <div class="page-wrapper">
+        <div class="book-list">
+            <SearchBar @search="onSearch" />
 
-        <EmptyState v-if="!bookStore.loading && filteredBooks.length === 0" text="Không có sách khả dụng" />
+            <EmptyState v-if="!bookStore.loading && filteredBooks.length === 0" text="Không có sách khả dụng" />
 
-        <BookTable v-else :books="filteredBooks" @view="viewDetail" @borrow="borrowBook" />
+            <BookTable v-else :books="filteredBooks" @view="viewDetail" @borrow="borrowBook" />
+        </div>
     </div>
 </template>
 
@@ -14,7 +16,6 @@ import { useRouter } from "vue-router";
 import { useBookStore } from "@/stores/bookStore";
 import SearchBar from "@/components/readers/SearchBar.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
-
 import BookTable from "@/components/readers/BookTable.vue";
 
 const bookStore = useBookStore();
@@ -49,3 +50,11 @@ function borrowBook(book) {
     });
 }
 </script>
+
+<style scoped>
+.book-list {
+    padding: 1rem;
+}
+
+/* Tùy chọn thêm style để điều chỉnh layout */
+</style>

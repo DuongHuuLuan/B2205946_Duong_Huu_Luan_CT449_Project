@@ -6,24 +6,16 @@
 
 <script setup>
 import { computed } from "vue";
-// ❌ Loại bỏ useRouter vì việc điều hướng sẽ được xử lý ở component cha (BookListView)
 
 const props = defineProps({
     book: { type: Object, required: true },
 });
-
-// Khai báo sự kiện 'borrow' để component cha lắng nghe
 const emit = defineEmits(["borrow"]);
-
-// Tính toán trạng thái vô hiệu hóa nút
 const isButtonDisabled = computed(() => {
-    // Vô hiệu hóa nếu số lượng sách còn lại nhỏ hơn hoặc bằng 0
-    // Sử dụng book.SoQuyenCon nếu có, hoặc book.SoQuyen
     return (props.book.SoQuyenCon ?? props.book.SoQuyen) <= 0;
 });
 
 function handleClick() {
-    // Phát ra sự kiện 'borrow' và truyền đối tượng sách (hoặc ID)
     emit("borrow", props.book);
 }
 
