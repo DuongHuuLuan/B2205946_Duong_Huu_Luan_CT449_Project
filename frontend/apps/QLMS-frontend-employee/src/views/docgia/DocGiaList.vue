@@ -2,9 +2,15 @@
     <div class="container mt-4">
         <h2 class="mb-3">Danh sách Độc Giả</h2>
 
-        <router-link to="/docgia/add" class="btn btn-primary mb-3">
-            Thêm Độc Giả
-        </router-link>
+        <div class="d-flex gap-2 align-items-center mb-3">
+            <router-link to="/docgia/add" class="btn btn-primary">
+                Thêm Độc Giả
+            </router-link>
+        </div>
+        <!-- Search -->
+        <div class="mb-3">
+            <InputSearch v-model="searchKeyword" @submit="onSearch" />
+        </div>
 
         <table class="table table-striped table-hover">
             <thead>
@@ -20,11 +26,11 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="dg in docGiaList" :key="dg._id">
+                <tr v-for="dg in displayedList" :key="dg._id">
                     <td>{{ dg.MaDocGia || dg._id }}</td>
                     <td>{{ dg.HoLot }}</td>
                     <td>{{ dg.Ten }}</td>
-                    <td>{{ new Date(dg.NgaySinh).toLocaleDateString() }}</td>
+                    <td>{{ formatDate(dg.NgaySinh) }}</td>
                     <td>{{ dg.Phai }}</td>
                     <td>{{ dg.DiaChi }}</td>
                     <td>{{ dg.DienThoai }}</td>
@@ -40,7 +46,7 @@
                         <span v-else class="text-muted">Đang mượn sách</span>
                     </td>
                 </tr>
-                <tr v-if="docGiaList.length === 0">
+                <tr v-if="displayedList.length === 0">
                     <td colspan="8" class="text-center">Không có dữ liệu.</td>
                 </tr>
             </tbody>
@@ -49,20 +55,50 @@
 </template>
 
 <script>
+import InputSearch from "@/components/InputSearch.vue";
 import DocGiaService from "@/services/docgia.service";
 import Swal from "sweetalert2";
 
 export default {
     name: "DocGiaList",
+    components: {
+        InputSearch,
+    },
     data() {
         return {
             docGiaList: [],
+            searchKeyword: "",
         };
     },
+    computed: {
+        displayedList() {
+            const kw = String(this.searchKeyword || "").trim().toLowerCase();
+            if (!kw) return this.docGiaList;
+
+            return this.docGiaList.filter(dg => {
+                const fields = [
+                    dg.MaDocGia,
+                    dg.HoLot,
+                    dg.Ten,
+                    dg.DiaChi,
+                    dg.DienThoai,
+                    dg._id,
+                ];
+                return fields.some(f => (f || "").toString().toLowerCase().includes(kw));
+            });
+        }
+    },
     methods: {
+        formatDate(value) {
+            if (!value) return "—";
+            const d = new Date(value);
+            return isNaN(d.getTime()) ? value : d.toLocaleDateString("vi-VN");
+        },
+
         async loadDocGia() {
             try {
-                this.docGiaList = await DocGiaService.getAll();
+                const res = await DocGiaService.getAll();
+                this.docGiaList = res?.data ?? res ?? [];
             } catch (error) {
                 Swal.fire({
                     icon: 'error',
@@ -98,6 +134,10 @@ export default {
                     console.error(error);
                 }
             }
+        },
+
+        onSearch() {
+            console.log("Tìm Độc Giả:", this.searchKeyword);
         },
     },
     mounted() {

@@ -4,10 +4,17 @@
             <div class="col-md-12">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3 class="fw-bold text-primary">Danh sách Nhân Viên</h3>
-                    <RouterLink :to="{ name: 'nhanvien.add' }" class="btn btn-success">
-                        <i class="fas fa-plus"></i> Thêm mới
-                    </RouterLink>
+                    <div class="d-flex gap-2 align-items-center">
+                        <RouterLink :to="{ name: 'nhanvien.add' }" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Thêm mới
+                        </RouterLink>
+                    </div>
                 </div>
+                <!-- Search -->
+                <div class="mb-3">
+                    <InputSearch v-model="searchKeyword" @submit="onSearch" />
+                </div>
+
                 <table class="table table-hover table-striped">
                     <thead>
                         <tr>
@@ -20,7 +27,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="nv in nhanVienList" :key="nv._id">
+                        <tr v-for="nv in displayedList" :key="nv._id">
                             <td>{{ nv.MSNV }}</td>
                             <td>{{ nv.HoTenNV }}</td>
                             <td>{{ nv.ChucVu }}</td>
@@ -36,6 +43,10 @@
                                 </button>
                             </td>
                         </tr>
+
+                        <tr v-if="displayedList.length === 0">
+                            <td colspan="6" class="text-center text-muted">Không có nhân viên nào.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -44,19 +55,45 @@
 </template>
 
 <script>
+import InputSearch from "@/components/InputSearch.vue";
 import NhanVienService from "@/services/nhanvien.service";
 import Swal from "sweetalert2";
 
 export default {
+    name: "NhanVienList",
+    components: {
+        InputSearch,
+    },
     data() {
         return {
             nhanVienList: [],
+            searchKeyword: "",
         };
+    },
+    computed: {
+        displayedList() {
+            const kw = String(this.searchKeyword || "").trim().toLowerCase();
+            if (!kw) return this.nhanVienList;
+
+            return this.nhanVienList.filter(nv => {
+                const fields = [
+                    nv.MSNV,
+                    nv.HoTenNV,
+                    nv.ChucVu,
+                    nv.DiaChi,
+                    nv.SoDienThoai,
+                    nv._id,
+                ];
+                return fields.some(f => (f || "").toString().toLowerCase().includes(kw));
+            });
+        }
     },
     methods: {
         async loadNhanVien() {
             try {
-                this.nhanVienList = await NhanVienService.getAll();
+                const res = await NhanVienService.getAll();
+                // support both axios style (res.data) and direct array
+                this.nhanVienList = res?.data ?? res ?? [];
             } catch (error) {
                 Swal.fire({
                     icon: 'error',
@@ -66,6 +103,7 @@ export default {
                 console.error(error);
             }
         },
+
         async deleteNhanVien(id) {
             const result = await Swal.fire({
                 title: 'Xác nhận xóa?',
@@ -88,6 +126,12 @@ export default {
                     console.error(error);
                 }
             }
+        },
+
+        onSearch() {
+            // gọi khi nhấn Enter hoặc click nút tìm — hiện chỉ log
+            console.log("Tìm nhân viên:", this.searchKeyword);
+            // nếu muốn search server-side, gọi API ở đây và cập nhật nhanVienList
         },
     },
     created() {

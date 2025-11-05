@@ -1,36 +1,61 @@
-// File: src/views/nhaxuatban/NhaXuatBanList.vue
+<!-- File: src/views/nhaxuatban/NhaXuatBanList.vue -->
 <template>
     <div class="container mt-4">
         <h2 class="mb-3">Danh sách Nhà Xuất Bản</h2>
 
-        <router-link to="/nhaxuatban/add" class="btn btn-primary mb-3">
-            Thêm Nhà Xuất Bản
-        </router-link>
+        <div class="d-flex gap-2 align-items-center mb-3">
+            <router-link to="/nhaxuatban/add" class="btn btn-primary">
+                Thêm Nhà Xuất Bản
+            </router-link>
+        </div>
+        <!-- Search component -->
+        <div class="mb-3">
+            <InputSearch v-model="searchKeyword" @submit="onSearch" />
+        </div>
 
-        <NhaXuatBanTable :nxbList="nxbList" @delete="deleteNXB" />
+        <NhaXuatBanTable :nxbList="displayedList" @delete="deleteNXB" />
 
-        <p v-if="nxbList.length === 0">Không có Nhà Xuất Bản nào.</p>
+        <p v-if="displayedList.length === 0" class="mt-3 text-center text-muted">Không có Nhà Xuất Bản nào.</p>
     </div>
 </template>
 
 <script>
+import InputSearch from "@/components/InputSearch.vue";
 import NhaXuatBanService from "@/services/nhaxuatban.service";
 import NhaXuatBanTable from "@/components/nhaxuatban/NhaXuatBanTable.vue";
 import Swal from "sweetalert2";
 
 export default {
     name: "NhaXuatBanList",
-    components: { NhaXuatBanTable },
+    components: { NhaXuatBanTable, InputSearch },
     data() {
         return {
             nxbList: [],
+            searchKeyword: "",
         };
+    },
+    computed: {
+        displayedList() {
+            const kw = String(this.searchKeyword || "").trim().toLowerCase();
+            if (!kw) return this.nxbList;
+
+            return this.nxbList.filter((nxb) => {
+                const fields = [
+                    nxb.TenNXB,
+                    nxb.MaNXB,
+                    nxb.DiaChi,
+                    nxb._id,
+                ];
+                return fields.some((f) => (f || "").toString().toLowerCase().includes(kw));
+            });
+        }
     },
     methods: {
         async loadNXB() {
             try {
                 const data = await NhaXuatBanService.getAll();
-                this.nxbList = data;
+                // support both axios-style and direct returns
+                this.nxbList = data?.data ?? data ?? [];
             } catch (error) {
                 Swal.fire({
                     icon: 'error',
@@ -40,6 +65,7 @@ export default {
                 console.error(error);
             }
         },
+
         async deleteNXB(id) {
             const result = await Swal.fire({
                 title: 'Xác nhận xóa?',
@@ -64,12 +90,17 @@ export default {
                 } catch (error) {
                     Swal.fire(
                         'Lỗi!',
-                        error.response?.data?.message || 'Xóa thất bại. Vui lòng thử l',
+                        error.response?.data?.message || 'Xóa thất bại. Vui lòng thử lại.',
                         'error'
                     );
                     console.error(error);
                 }
             }
+        },
+
+        onSearch() {
+            // hiện chỉ log; nếu muốn tìm server-side, gọi API ở đây
+            console.log("Tìm Nhà Xuất Bản:", this.searchKeyword);
         },
     },
     mounted() {
