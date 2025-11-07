@@ -160,18 +160,27 @@ export const useDocGiaStore = defineStore("docgia", {
         const body = { ...payload };
         delete body.MaDocGia;
 
-        const res = await DocGiaService.updateProfile(body);
-        const maybe = res ?? {};
-        const updated =
-          maybe.profile ?? maybe.updated ?? maybe.user ?? maybe.value ?? maybe;
+        const res = await DocGiaService.updateProfile(body); // 1. TRÍCH XUẤT DỮ LIỆU JSON
 
-        if (updated && typeof updated === "object") {
-          this.setProfile(updated);
-          return this.profile;
+        const data = res.data; // 2. TÌM KIẾM OBJECT PROFILE ĐÃ CẬP NHẬT TRONG PHẢN HỒI (data)
+
+        const maybe = data ?? {};
+        const updatedProfile = // Sử dụng tên biến rõ ràng hơn
+          maybe.profile ?? maybe.updated ?? maybe.user ?? maybe.value ?? maybe; // 3. CẬP NHẬT STATE VÀ TRẢ VỀ
+
+        if (updatedProfile && typeof updatedProfile === "object") {
+          // DÒNG QUAN TRỌNG NHẤT: Cập nhật state Pinia ngay lập tức
+          this.setProfile(updatedProfile);
+
+          // Trả về toàn bộ data (bao gồm message và profile)
+          return data;
         }
 
+        console.warn(
+          "Update profile successful but missing profile object, fetching again..."
+        );
         await this.fetchProfile();
-        return this.profile;
+        return data;
       } catch (err) {
         this.error =
           err?.response?.data?.message ?? err?.message ?? "Cập nhật thất bại";

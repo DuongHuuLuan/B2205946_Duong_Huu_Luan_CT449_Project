@@ -1,37 +1,37 @@
 import { createApiClient, publicApi } from "./api.service";
-
 const PREFIX = "/docgia";
 
 class DocGiaService {
   constructor(prefix) {
-    this.publicPath = prefix;
     this.privateApi = createApiClient(prefix);
+    this.publicPath = prefix;
   }
 
-  /* Public (no token) */
   async login(data) {
-    return publicApi.post(`${this.publicPath}/login`, data);
+    const res = await publicApi.post(`${this.publicPath}/login`, data);
+    return res;
   }
 
   async register(data) {
-    return publicApi.post(`${this.publicPath}/register`, data);
+    const res = await publicApi.post(`${this.publicPath}/register`, data);
+    return res;
   }
 
-  /* Private (token required) */
   async getProfile() {
-    return this.privateApi.get("/profile/me");
+    const res = await this.privateApi.get("/profile/me");
+    return res;
   }
 
   async updateProfile(payload) {
-    return this.privateApi.put("/profile/update", payload);
-  }
-
-  async getBorrowStats() {
-    return this.privateApi.get("/profile/stats");
+    const res = await this.privateApi.put("/profile/update", payload);
+    return res;
   }
 
   async uploadAvatar(formData) {
-    return this.privateApi.post("/profile/avatar", formData);
+    const res = await this.privateApi.post("/profile/avatar", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res;
   }
 }
 

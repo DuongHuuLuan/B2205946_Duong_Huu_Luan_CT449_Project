@@ -37,21 +37,21 @@
                 <label>Địa chỉ</label>
                 <input v-model="form.DiaChi" type="text" />
             </div>
-
             <div class="actions">
-                <button class="btn-primary" :disabled="saving">{{ saving ? "Đang lưu..." : "Lưu" }}</button>
+                <button class="btn-primary" :disabled="saving">{{ saving ? "Đang lưu..." : "Lưu"
+                }}</button>
                 <button type="button" class="btn-outline" @click="onReset">Huỷ</button>
             </div>
 
             <div v-if="error" class="form-error">{{ error }}</div>
-            <div v-if="success" class="form-success">{{ success }}</div>
         </form>
     </div>
 </template>
 
 <script setup>
-import { reactive, watch } from "vue";
+import { reactive, watch, ref } from "vue"; // Thêm ref
 import { useDocGiaStore } from "@/stores/docgiaStore";
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 const props = defineProps({ initialProfile: { type: Object, required: true } });
 const emit = defineEmits(["saved"]);
@@ -78,9 +78,10 @@ const form = reactive({
     DiaChi: props.initialProfile.DiaChi || "",
 });
 
-let saving = false;
-let error = null;
-let success = null;
+// Sử dụng ref cho reactivity
+const saving = ref(false);
+const error = ref(null);
+// Đã xóa const success = ref(null); vì dùng Swal
 
 watch(
     () => props.initialProfile,
@@ -91,8 +92,7 @@ watch(
         form.Phai = np?.Phai || "";
         form.DienThoai = np?.DienThoai || "";
         form.DiaChi = np?.DiaChi || "";
-        error = null;
-        success = null;
+        error.value = null; // Cập nhật ref
     },
     { immediate: true, deep: true }
 );
@@ -104,18 +104,16 @@ function onReset() {
     form.Phai = props.initialProfile.Phai || "";
     form.DienThoai = props.initialProfile.DienThoai || "";
     form.DiaChi = props.initialProfile.DiaChi || "";
-    error = null;
-    success = null;
+    error.value = null; // Cập nhật ref
 }
 
 async function onSubmit() {
-    saving = true;
-    error = null;
-    success = null;
+    saving.value = true;
+    error.value = null;
 
     if (!form.Ten || String(form.Ten).trim().length === 0) {
-        error = "Tên không được để trống";
-        saving = false;
+        error.value = "Tên không được để trống";
+        saving.value = false;
         return;
     }
 
@@ -128,14 +126,32 @@ async function onSubmit() {
             DienThoai: form.DienThoai || undefined,
             DiaChi: form.DiaChi || undefined,
         };
-        const updated = await store.updateProfile(payload);
-        success = "Cập nhật thành công";
-        emit("saved", updated);
+
+        const response = await store.updateProfile(payload);
+        const message = response?.message || "Cập nhật thành công";
+        const updatedProfile = response?.profile || {};
+        Swal.fire({
+            icon: 'success',
+            title: 'Thành công!',
+            text: message,
+            showConfirmButton: false,
+            timer: 3000
+        });
+        emit("saved", updatedProfile);
+
     } catch (err) {
         console.error(err);
-        error = store.error || (err?.response?.data?.message ?? "Cập nhật thất bại. Vui lòng thử lại.");
+        const errorMessage = err?.response?.data?.message ?? "Cập nhật thất bại. Vui lòng thử lại.";
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: errorMessage,
+            showConfirmButton: true,
+        });
+
+        error.value = errorMessage;
     } finally {
-        saving = false;
+        saving.value = false;
     }
 }
 </script>
@@ -248,11 +264,7 @@ async function onSubmit() {
     font-size: 14px;
 }
 
-.form-success {
-    color: #065f46;
-    margin-top: 12px;
-    font-size: 14px;
-}
+/* Đã loại bỏ .form-success */
 
 @media (max-width: 720px) {
     .form-grid {
