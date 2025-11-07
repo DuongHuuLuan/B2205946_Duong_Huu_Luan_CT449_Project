@@ -9,7 +9,7 @@
                         <path
                             d="M4 19V6a2 2 0 012-2h12a2 2 0 012 2v13M4 19h16M4 19a2 2 0 002 2h12a2 2 0 002-2M8 6v1M16 6v1" />
                     </svg>
-                    Chào mừng, Độc Giả {{ currentUser.HoTen || currentUser.MaDocGia }}
+                    Chào mừng, Độc Giả {{ currentUser.HoLot }} {{ currentUser.Ten }}
                 </h1>
                 <p class="header-subtitle">Trang tổng quan về hoạt động mượn sách của bạn.</p>
             </header>

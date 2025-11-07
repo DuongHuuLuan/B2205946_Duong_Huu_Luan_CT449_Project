@@ -11,7 +11,7 @@ const getBaseUrl = () => {
     ) {
       return import.meta.env.VITE_API_BASE;
     }
-  } catch (e) {}
+  } catch (_) {}
 
   try {
     if (
@@ -21,20 +21,20 @@ const getBaseUrl = () => {
     ) {
       return process.env.VUE_APP_API_BASE;
     }
-  } catch (e) {}
+  } catch (_) {}
 
   if (typeof window !== "undefined" && window.__API_BASE__) {
     return window.__API_BASE__;
   }
 
-  // default (include /api)
-  return "http://localhost:3002/api";
+  return "/api";
 };
 
 const BASE_URL = getBaseUrl();
 console.log("[DEBUG] API BASE_URL =", BASE_URL);
 
-/* Public API (no token) */
+//Public API (không token)
+
 export const publicApi = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -44,6 +44,7 @@ export const publicApi = axios.create({
   timeout: 20000,
 });
 
+//Private API (token)
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -60,17 +61,19 @@ api.interceptors.request.use(
         config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
       }
-    } catch (e) {}
+    } catch (_) {}
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// createApiClient("/docgia"), "/nhanvien"
+
 export function createApiClient(prefix = "") {
-  const p = !prefix ? "" : prefix.startsWith("/") ? prefix : `/${prefix}`;
+  const p = prefix ? (prefix.startsWith("/") ? prefix : `/${prefix}`) : "";
 
   const instance = axios.create({
-    baseURL: `${BASE_URL}${p}`, // e.g. http://localhost:3002/api + /docgia => /api/docgia
+    baseURL: `${BASE_URL}${p}`,
     headers: {
       Accept: "application/json",
     },
@@ -86,13 +89,12 @@ export function createApiClient(prefix = "") {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
+        // Nếu upload FormData thì để axios tự set Content-Type
         if (config.data instanceof FormData) {
-          if (config.headers) {
-            delete config.headers["Content-Type"];
-            delete config.headers["content-type"];
-          }
+          delete config.headers["Content-Type"];
+          delete config.headers["content-type"];
         }
-      } catch (e) {}
+      } catch (_) {}
       return config;
     },
     (err) => Promise.reject(err)
