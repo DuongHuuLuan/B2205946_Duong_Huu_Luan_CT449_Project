@@ -85,9 +85,8 @@ router.put(
 
       if (!req.user || !req.user.MaDocGia) {
         return next(new ApiError(401, "Không xác thực người dùng"));
-      }
+      } // [Giữ nguyên logic whitelist và chuẩn hoá payload]
 
-      // whitelist (không include file avatar upload)
       const allowed = [
         "HoLot",
         "Ten",
@@ -107,16 +106,31 @@ router.put(
       if (payload.NgaySinh && typeof payload.NgaySinh === "string") {
         const d = new Date(payload.NgaySinh);
         if (!isNaN(d.getTime())) payload.NgaySinh = d;
-      }
+      } // Lấy bản ghi gốc để so sánh và để trả về nếu không có thay đổi
+
+      const existingDoc = await service.findOne({
+        MaDocGia: req.user.MaDocGia,
+      });
+
+      if (!existingDoc) {
+        // Nếu không tìm thấy, đây mới là lỗi 404 thực sự
+        return next(new ApiError(404, "Không tìm thấy Độc giả"));
+      } // Tiến hành cập nhật
 
       const updatedDoc = await service.update(
         { MaDocGia: req.user.MaDocGia },
         payload
-      );
+      ); // *** ĐIỂM SỬA LỖI CHÍNH ***
 
       if (!updatedDoc) {
-        return next(new ApiError(404, "Không tìm thấy Độc giả"));
-      }
+        // updatedDoc == null nghĩa là:
+        // 1. Đã tìm thấy (vì đã kiểm tra existingDoc ở trên), NHƯNG KHÔNG CÓ TRƯỜNG NÀO THAY ĐỔI
+        const { Password, ...publicProfile } = existingDoc;
+        return res.status(200).send({
+          message: "Cập nhật thành công (Không có thay đổi dữ liệu).",
+          profile: publicProfile,
+        });
+      } // THÀNH CÔNG VÀ CÓ THAY ĐỔI
 
       const { Password, ...publicProfile } = updatedDoc;
 
@@ -125,6 +139,7 @@ router.put(
         profile: publicProfile,
       });
     } catch (error) {
+      // [Giữ nguyên logic xử lý lỗi]
       console.error("updateProfile ERROR:", error);
       if (process.env.NODE_ENV === "development") {
         return res
@@ -135,5 +150,4 @@ router.put(
     }
   }
 );
-
 module.exports = router;

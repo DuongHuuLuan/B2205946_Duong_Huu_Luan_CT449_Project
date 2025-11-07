@@ -50,14 +50,13 @@ class DocGiaService {
 
   async update(idOrFilter, payload) {
     let filter;
-    if (typeof idOrFilter === "object" && !ObjectId.isValid(idOrFilter)) {
-      filter = idOrFilter;
-    } else if (typeof idOrFilter === "string" && ObjectId.isValid(idOrFilter)) {
-      filter = { _id: new ObjectId(idOrFilter) };
-    } else if (
-      typeof idOrFilter === "object" &&
-      ObjectId.isValid(idOrFilter._id)
-    ) {
+    if (typeof idOrFilter === "string") {
+      if (ObjectId.isValid(idOrFilter)) {
+        filter = { _id: new ObjectId(idOrFilter) };
+      } else {
+        filter = { MaDocGia: idOrFilter };
+      }
+    } else if (typeof idOrFilter === "object" && idOrFilter !== null) {
       filter = idOrFilter;
     } else {
       filter = idOrFilter;
@@ -65,16 +64,21 @@ class DocGiaService {
 
     const updateData = this.extractDocGiaData(payload);
 
+    if (!updateData || Object.keys(updateData).length === 0) {
+      return null;
+    }
+
     if (updateData.Password) {
       const salt = await bcrypt.genSalt(10);
       updateData.Password = await bcrypt.hash(updateData.Password, salt);
     }
+
     let result;
     try {
       result = await this.DocGia.findOneAndUpdate(
         filter,
         { $set: updateData },
-        { returnDocument: "after" } // modern driver
+        { returnDocument: "after" }
       );
     } catch (err) {
       if (err && /returnDocument|unknown option/i.test(err.message)) {
