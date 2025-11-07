@@ -27,9 +27,6 @@
                         <i class="fas fa-sign-in-alt me-2"></i> Đăng Nhập
                     </button>
                 </form>
-                <p class="mt-3 text-center">
-                    Chưa có tài khoản? <Router-link to="/register">Đăng ký ngay</Router-link>
-                </p>
             </div>
         </div>
     </div>
