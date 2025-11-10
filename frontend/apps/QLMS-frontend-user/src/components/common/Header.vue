@@ -40,9 +40,13 @@
                     <div class="hv-user">
                         <RouterLink v-if="isDocGia" :to="{ name: 'docgia.profile' }" class="hv-avatar-link"
                             title="Xem hồ sơ">
-                            <div class="hv-avatar">{{ userInitial }}</div>
+                            <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="Avatar" class="hv-avatar-img" />
+                            <div v-else class="hv-avatar">{{ userInitial }}</div>
                         </RouterLink>
-                        <div v-else class="hv-avatar">{{ userInitial }}</div>
+                        <div v-else class="hv-avatar-wrapper">
+                            <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="Avatar" class="hv-avatar-img" />
+                            <div v-else class="hv-avatar">{{ userInitial }}</div>
+                        </div>
 
                         <div class="hv-userinfo">
                             <RouterLink v-if="isDocGia" :to="{ name: 'docgia.profile' }" class="hv-name-link"
@@ -80,6 +84,13 @@ const mobileOpen = ref(false);
 const isAuthenticated = computed(() => auth.isLoggedIn);
 const user = computed(() => auth.user || {});
 
+// --> LOGIC MỚI CHO AVATAR URL <--
+const userAvatarUrl = computed(() => {
+    // Giả sử tên trường trong đối tượng user là 'Avatar'
+    return user.value?.Avatar || user.value?.avatarUrl || null;
+});
+// ----------------------------------
+
 const userDisplay = computed(() => {
     if (user.value?.HoLot && user.value?.Ten) {
         return `${user.value.HoLot} ${user.value.Ten}`;
@@ -107,3 +118,52 @@ function logout() {
     mobileOpen.value = false;
 }
 </script>
+
+<style scoped>
+/* Lưu ý: Phần lớn CSS được đặt trong "@/assets/css/header.css".
+    Đây là style bổ sung/ghi đè cho ảnh Avatar.
+*/
+
+/* Đảm bảo ảnh Avatar có kích thước và hình dạng giống hệt div hv-avatar cũ */
+.hv-avatar-img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+/* Ghi đè hiệu ứng hover cho link bao quanh ảnh Avatar của Độc Giả */
+.hv-avatar-link:hover .hv-avatar-img {
+    border-color: #f3f4f6;
+    /* Màu nhạt khi hover */
+}
+
+/* Wrapper cho staff/default avatar để căn chỉnh nếu cần */
+.hv-avatar-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+}
+
+/* Đảm bảo hv-avatar (chữ cái đầu) giữ nguyên style cũ */
+.hv-avatar {
+    /* (Giả định style này đã có trong header.css: background, text-color, v.v.) */
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    background-color: #3b82f6;
+    /* Ví dụ: blue-500 */
+    color: white;
+}
+</style>

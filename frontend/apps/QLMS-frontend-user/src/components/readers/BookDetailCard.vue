@@ -2,7 +2,10 @@
 <template>
     <div class="book-card" :aria-label="`Chi tiết sách ${book.TenSach || ''}`" role="article">
         <h2 class="book-title">{{ book.TenSach || '—' }}</h2>
-
+        <div class="book-cover-wrapper">
+            <img :src="book.BiaSach" :alt="`Bìa sách ${book.TenSach || ''}`" class="book-cover" v-if="book.BiaSach" />
+            <div v-else class="cover-placeholder">🖼️</div>
+        </div>
         <p class="meta-line"><strong>Tác giả:</strong> <span>{{ book.TacGia || '—' }}</span></p>
         <p class="meta-line"><strong>Năm xuất bản:</strong> <span>{{ book.NamXuatBan || '—' }}</span></p>
         <p class="meta-line"><strong>Số quyển còn lại:</strong> <span>{{ book.SoQuyen ?? '-' }}</span></p>
@@ -39,8 +42,11 @@ function formatPrice(price) {
     transition: transform 0.16s ease, box-shadow 0.16s ease;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    /* Tăng khoảng cách tổng thể giữa các phần tử */
     min-width: 240px;
+    text-align: center;
+    /* Căn giữa nội dung trong card */
 }
 
 /* hover / focus */
@@ -50,14 +56,55 @@ function formatPrice(price) {
     box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
 }
 
+/* Book Cover Wrapper */
+.book-cover-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+    /* Khoảng cách dưới ảnh bìa */
+}
+
+/* Book Cover Image */
+.book-cover {
+    width: 120px;
+    /* Chiều rộng ảnh bìa */
+    height: 180px;
+    /* Chiều cao ảnh bìa */
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+/* Placeholder khi không có ảnh bìa */
+.cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    /* Chiều rộng giống ảnh */
+    height: 180px;
+    /* Chiều cao giống ảnh */
+    border-radius: 8px;
+    background-color: #f1f5f9;
+    color: #9ca3af;
+    font-size: 40px;
+    /* Ký tự lớn hơn */
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+
 /* Title */
 .book-title {
     font-size: 18px;
     font-weight: 800;
     color: #5b21b6;
     /* purple accent */
-    margin: 0 0 6px 0;
-    line-height: 1.15;
+    margin: 0;
+    /* Loại bỏ margin top/bottom */
+    line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -65,19 +112,23 @@ function formatPrice(price) {
 
 /* metadata lines */
 .meta-line {
-    margin: 4px 0;
+    margin: 2px 0;
+    /* Giảm khoảng cách giữa các dòng meta */
     color: #374151;
     font-size: 14px;
     display: flex;
-    gap: 8px;
+    justify-content: space-between;
+    /* Căn đều nội dung */
     align-items: baseline;
+    text-align: left;
+    /* Đặt lại text-align cho meta-line */
 }
 
 .meta-line strong {
     color: #111827;
     font-weight: 600;
-    min-width: 120px;
-    /* align values vertically */
+    /* min-width: 120px; */
+    /* Không cần min-width khi dùng space-between */
     display: inline-block;
     font-size: 14px;
 }
@@ -87,13 +138,19 @@ function formatPrice(price) {
     color: #374151;
     font-weight: 500;
     font-size: 14px;
+    flex-grow: 1;
+    /* Cho phép span chiếm hết không gian còn lại */
+    text-align: right;
+    /* Căn phải các giá trị */
 }
 
 /* actions row */
 .actions {
     display: flex;
-    justify-content: flex-end;
-    margin-top: 8px;
+    justify-content: center;
+    /* Căn giữa nút mượn sách */
+    margin-top: 12px;
+    /* Khoảng cách trên nút mượn sách */
 }
 
 /* borrow button */
@@ -139,8 +196,19 @@ function formatPrice(price) {
         gap: 8px;
     }
 
+    .book-cover {
+        width: 100px;
+        height: 150px;
+    }
+
+    .cover-placeholder {
+        width: 100px;
+        height: 150px;
+        font-size: 32px;
+    }
+
     .meta-line strong {
-        min-width: 96px;
+        /* min-width: 96px; */
         font-size: 13px;
     }
 

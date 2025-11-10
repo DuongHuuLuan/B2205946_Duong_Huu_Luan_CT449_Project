@@ -35,8 +35,7 @@ const emit = defineEmits(["avatar-uploaded", "edit"]);
 const fileInput = ref(null);
 
 const avatarUrl = computed(() => {
-    const p = props.profile || {};
-    return p.avatar || p.Avatar || p.avatarUrl || p.AvatarUrl || p.AvatarURL || null;
+    return props.profile?.Avatar || null;
 });
 
 const fullName = computed(() => {

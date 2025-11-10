@@ -6,6 +6,7 @@
             <thead>
                 <tr>
                     <th scope="col">Mã</th>
+                    <th scope="col">Ảnh sách</th>
                     <th scope="col">Tên sách</th>
                     <th scope="col">Tác giả</th>
                     <th scope="col">Năm XB</th>

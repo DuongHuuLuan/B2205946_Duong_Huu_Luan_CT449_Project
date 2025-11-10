@@ -1,4 +1,3 @@
-<!-- src/components/books/BookRow.vue (căn đều, cải tiến layout) -->
 <template>
     <tr class="book-row" @click="onView" tabindex="0" @keydown.enter.prevent="onView" role="button"
         :aria-label="`Xem chi tiết: ${book.TenSach || 'sách'}`">
@@ -6,6 +5,13 @@
             <div class="cell-content">{{ book.MaSach ?? "-" }}</div>
         </td>
 
+        <td class="cell avatar" :title="book.BiaSach">
+            <div class="cell-content">
+                <img :src="book.BiaSach" :alt="`Bìa sách ${book.TenSach || ''}`" class="book-cover"
+                    v-if="book.BiaSach" />
+                <div v-else class="cover-placeholder">🖼️</div>
+            </div>
+        </td>
         <td class="cell name" :title="book.TenSach || '-'">
             <div class="cell-content name-content">
                 <div class="title">{{ book.TenSach || "-" }}</div>
@@ -39,7 +45,6 @@
 
         <td class="cell actions">
             <div class="cell-content actions-content" @click.stop>
-                <!-- BorrowButton giữ nguyên API, chỉ style ngoài để trông gọn hơn -->
                 <BorrowButton :book="book" @borrow="onBorrow" />
             </div>
         </td>
@@ -276,6 +281,66 @@ const qtyTooltip = qtyValue === 0 ? "Hết sách" : (qtyValue <= 2 ? `Còn ${qty
     .cell.actions {
         width: 100px;
         max-width: 100px;
+    }
+}
+
+.cell.avatar {
+    width: 60px;
+    max-width: 60px;
+    padding: 8px 10px;
+}
+
+.cell.avatar .cell-content {
+    justify-content: center;
+}
+
+/* Style cho ảnh bìa */
+.book-cover {
+    width: 40px;
+    /* Kích thước ảnh */
+    height: 55px;
+    /* Kích thước ảnh */
+    object-fit: cover;
+    /* Đảm bảo ảnh hiển thị đẹp */
+    border-radius: 4px;
+    /* Góc bo tròn nhẹ */
+    border: 1px solid #e2e8f0;
+    /* Viền nhẹ */
+    flex-shrink: 0;
+    /* Ngăn ảnh bị co lại */
+}
+
+/* Style cho placeholder khi không có ảnh bìa */
+.cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 55px;
+    border-radius: 4px;
+    background-color: #f1f5f9;
+    /* Màu nền nhẹ */
+    color: var(--muted);
+    font-size: 18px;
+    /* Ký tự lớn */
+    border: 1px solid #e2e8f0;
+}
+
+
+/* RESPONSIVE adjustments cho cột mới */
+@media (max-width: 720px) {
+    /* ... các rule cũ giữ nguyên ... */
+
+    .cell.avatar {
+        width: 50px;
+        max-width: 50px;
+        padding: 6px 8px;
+    }
+
+    .book-cover,
+    .cover-placeholder {
+        width: 34px;
+        height: 48px;
     }
 }
 </style>

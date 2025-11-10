@@ -39,7 +39,7 @@
             </div>
             <div class="actions">
                 <button class="btn-primary" :disabled="saving">{{ saving ? "Đang lưu..." : "Lưu"
-                }}</button>
+                    }}</button>
                 <button type="button" class="btn-outline" @click="onReset">Huỷ</button>
             </div>
 
