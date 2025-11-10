@@ -10,6 +10,7 @@ class DocGiaService {
   extractDocGiaData(payload) {
     const docgia = {
       MaDocGia: payload.MaDocGia,
+      Avatar: payload.Avatar,
       HoLot: payload.HoLot,
       Ten: payload.Ten,
       NgaySinh: payload.NgaySinh,
@@ -17,7 +18,6 @@ class DocGiaService {
       DiaChi: payload.DiaChi,
       DienThoai: payload.DienThoai,
       Password: payload.Password,
-      // avatar: payload.avatar,
     };
 
     Object.keys(docgia).forEach(

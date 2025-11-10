@@ -8,12 +8,13 @@ class SachService {
   extractSachData(payload) {
     const sach = {
       MaSach: payload.MaSach,
+      BiaSach: payload.BiaSach,
       TenSach: payload.TenSach,
       DonGia: payload.DonGia,
       SoQuyen: payload.SoQuyen,
       NamXuatBan: payload.NamXuatBan,
       MaNXB: payload.MaNXB,
-      TacGia: payload.TacGia, // hoặc NguonGoc
+      TacGia: payload.TacGia,
     };
 
     Object.keys(sach).forEach(
