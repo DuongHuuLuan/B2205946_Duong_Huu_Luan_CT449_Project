@@ -6,14 +6,14 @@
             Thêm Sách
         </router-link>
 
-        <!-- Search -->
         <InputSearch v-model="searchKeyword" @submit="onSearch" class="mb-3" />
 
         <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
 
-        <table class="table table-striped table-hover">
+        <table class="table table-striped table-hover sach-table">
             <thead>
                 <tr>
+                    <th class="cover-col">Bìa Sách</th>
                     <th>Mã Sách</th>
                     <th>Tên Sách</th>
                     <th>Đơn Giá</th>
@@ -26,6 +26,12 @@
             </thead>
             <tbody>
                 <tr v-for="sach in displayedList" :key="sach._id">
+                    <td class="cover-col">
+                        <div class="list-cover-wrapper">
+                            <img v-if="sach.BiaSach" :src="sach.BiaSach" :alt="sach.TenSach" class="list-cover-img" />
+                            <div v-else class="list-cover-default">Ảnh</div>
+                        </div>
+                    </td>
                     <td>{{ sach.MaSach || sach._id }}</td>
                     <td>{{ sach.TenSach }}</td>
                     <td>{{ formatPrice(sach.DonGia) }}</td>
@@ -45,7 +51,7 @@
                     </td>
                 </tr>
                 <tr v-if="displayedList.length === 0">
-                    <td colspan="8" class="text-center">Không có dữ liệu.</td>
+                    <td colspan="9" class="text-center">Không có dữ liệu.</td>
                 </tr>
             </tbody>
         </table>
@@ -75,7 +81,6 @@ export default {
             if (!kw) return this.sachList;
 
             return this.sachList.filter((s) => {
-                // check multiple fields
                 const fields = [
                     s.MaSach,
                     s.TenSach,
@@ -144,3 +149,55 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+/* Định nghĩa chiều rộng cột Bìa Sách */
+.sach-table .cover-col {
+    width: 80px;
+    text-align: center;
+    padding: 8px 5px;
+}
+
+/* Wrapper để căn giữa và định dạng kích thước bìa sách (tỉ lệ 2:3) */
+.list-cover-wrapper {
+    width: 50px;
+    /* Chiều rộng cố định */
+    height: 75px;
+    /* Chiều cao 1.5 lần chiều rộng */
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    /* Căn giữa trong ô bảng */
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Style cho ảnh thực tế */
+.list-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Style cho Placeholder mặc định */
+.list-cover-default {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    color: #888;
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Căn chỉnh lại các cột trong bảng */
+.sach-table th,
+.sach-table td {
+    vertical-align: middle;
+}
+</style>

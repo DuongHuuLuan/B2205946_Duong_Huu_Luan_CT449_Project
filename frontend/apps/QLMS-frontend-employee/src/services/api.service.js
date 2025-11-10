@@ -3,7 +3,7 @@ import axios from "axios";
 const commonConfig = {
   headers: {
     // Đổi Headers thành headers (thường là chữ thường trong Axios)
-    "Content-Type": "application/json",
+    //"Content-Type": "application/json",
     Accept: "application/json",
   },
 };

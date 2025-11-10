@@ -10,14 +10,14 @@
                         </RouterLink>
                     </div>
                 </div>
-                <!-- Search -->
                 <div class="mb-3">
                     <InputSearch v-model="searchKeyword" @submit="onSearch" />
                 </div>
 
-                <table class="table table-hover table-striped">
+                <table class="table table-hover table-striped nhanvien-table">
                     <thead>
                         <tr>
+                            <th class="avatar-col">Avatar</th>
                             <th>MSNV</th>
                             <th>Họ Tên</th>
                             <th>Chức Vụ</th>
@@ -28,6 +28,12 @@
                     </thead>
                     <tbody>
                         <tr v-for="nv in displayedList" :key="nv._id">
+                            <td class="avatar-col">
+                                <div class="list-avatar-wrapper">
+                                    <img v-if="nv.Avatar" :src="nv.Avatar" :alt="nv.HoTenNV" class="list-avatar-img" />
+                                    <div v-else class="list-avatar-default">{{ getInitial(nv) }}</div>
+                                </div>
+                            </td>
                             <td>{{ nv.MSNV }}</td>
                             <td>{{ nv.HoTenNV }}</td>
                             <td>{{ nv.ChucVu }}</td>
@@ -45,7 +51,7 @@
                         </tr>
 
                         <tr v-if="displayedList.length === 0">
-                            <td colspan="6" class="text-center text-muted">Không có nhân viên nào.</td>
+                            <td colspan="7" class="text-center text-muted">Không có nhân viên nào.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -89,6 +95,11 @@ export default {
         }
     },
     methods: {
+        // METHOD MỚI: Lấy chữ cái đầu
+        getInitial(nhanVien) {
+            return (nhanVien.HoTenNV || nhanVien.MSNV || "?").charAt(0).toUpperCase();
+        },
+
         async loadNhanVien() {
             try {
                 const res = await NhanVienService.getAll();
@@ -139,3 +150,55 @@ export default {
     },
 };
 </script>
+<style scoped>
+/* Định nghĩa chiều rộng cột Avatar */
+.nhanvien-table .avatar-col {
+    width: 60px;
+    /* Chiều rộng cố định cho cột */
+    text-align: center;
+    padding: 8px 5px;
+}
+
+/* Wrapper để căn giữa và định dạng hình tròn */
+.list-avatar-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    /* Căn giữa trong ô bảng */
+    border: 1px solid #198754;
+    /* Màu viền xanh lá cây (Success) */
+}
+
+/* Style cho ảnh thực tế */
+.list-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Style cho Avatar mặc định (chữ cái đầu) */
+.list-avatar-default {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #d1e7dd;
+    /* Màu nền xanh nhạt */
+    color: #198754;
+    /* Màu chữ xanh đậm */
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Căn chỉnh lại các cột trong bảng */
+.nhanvien-table th,
+.nhanvien-table td {
+    vertical-align: middle;
+}
+</style>

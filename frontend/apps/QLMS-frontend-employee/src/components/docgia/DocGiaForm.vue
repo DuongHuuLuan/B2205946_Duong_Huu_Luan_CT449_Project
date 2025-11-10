@@ -1,5 +1,17 @@
 <template>
-    <form @submit.prevent="submitDocGia">
+    <form @submit.prevent="submitDocGia" enctype="multipart/form-data">
+        <div class="mb-3 avatar-section">
+            <label class="form-label d-block">Ảnh Đại Diện (Avatar):</label>
+
+            <div class="current-avatar-wrapper">
+                <img v-if="docGiaLocal.Avatar" :src="docGiaLocal.Avatar" alt="Avatar hiện tại" class="current-avatar" />
+                <div v-else class="default-avatar">DG</div>
+            </div>
+
+            <input type="file" id="AvatarFile" class="form-control mt-2" @change="handleAvatarChange"
+                accept="image/*" />
+            <small class="form-text text-muted">Chọn ảnh mới để thay đổi Avatar.</small>
+        </div>
         <div class="mb-3">
             <label for="MaDocGia" class="form-label">Mã Độc Giả:</label>
             <input type="text" id="MaDocGia" class="form-control" v-model="docGiaLocal.MaDocGia" required />
@@ -48,22 +60,53 @@
 export default {
     name: "DocGiaForm",
     props: { docGia: { type: Object, required: true } },
-    emits: ["submit:docgia"],
+    // Cần thay đổi emit để có thể gửi kèm cả file
+    emits: ["submit:docgia", "submit:docgia-with-file"],
     data() {
-        return { docGiaLocal: {} };
+        return {
+            docGiaLocal: {},
+            newAvatarFile: null, // <-- Thêm biến lưu file mới
+        };
     },
     watch: {
         docGia: {
             handler(newVal) {
+                // Đảm bảo reset newAvatarFile khi docGia thay đổi
                 this.docGiaLocal = newVal ? JSON.parse(JSON.stringify(newVal)) : {};
+                this.newAvatarFile = null;
             },
             immediate: true,
             deep: true,
         },
     },
     methods: {
+        handleAvatarChange(event) {
+            // Lưu file được chọn
+            this.newAvatarFile = event.target.files[0];
+
+            // Tùy chọn: Cập nhật ngay ảnh hiển thị (preview)
+            if (this.newAvatarFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    // Cập nhật đường dẫn tạm thời cho mục đích preview
+                    this.docGiaLocal.Avatar = e.target.result;
+                };
+                reader.readAsDataURL(this.newAvatarFile);
+            }
+        },
         submitDocGia() {
-            this.$emit("submit:docgia", { ...this.docGiaLocal });
+            // Nếu có file mới được chọn, chúng ta emit sự kiện khác 
+            // để component cha biết và xử lý upload file riêng.
+            if (this.newAvatarFile) {
+                // Gửi docGiaLocal và file
+                this.$emit("submit:docgia-with-file", {
+                    docGia: { ...this.docGiaLocal, Avatar: undefined }, // Xóa Avatar cũ khỏi object docGia
+                    file: this.newAvatarFile
+                });
+            } else {
+                // Nếu không có file mới, gửi docGiaLocal như cũ
+                this.$emit("submit:docgia", { ...this.docGiaLocal });
+            }
         },
     },
 };

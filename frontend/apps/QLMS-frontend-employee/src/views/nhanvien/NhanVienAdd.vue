@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import NhanVienForm from "@/components/nhanvien/NhanVienFrom.vue";
+import NhanVienForm from "@/components/nhanvien/NhanVienForm.vue";
 import NhanVienService from "@/services/nhanvien.service";
 import Swal from "sweetalert2";
 
