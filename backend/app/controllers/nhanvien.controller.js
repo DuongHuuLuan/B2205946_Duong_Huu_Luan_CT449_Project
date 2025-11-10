@@ -22,6 +22,7 @@ exports.create = async (req, res, next) => {
 
     const nhanVienData = {
       MSNV: req.body.MSNV,
+      Avatar: req.body.Avatar,
       HoTenNV: req.body.HoTenNV,
       Password: hashedPassword,
       ChucVu: req.body.ChucVu || "HoTro",

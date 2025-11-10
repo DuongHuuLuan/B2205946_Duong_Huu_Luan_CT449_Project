@@ -11,6 +11,7 @@ class NhanVienService {
       throw new Error("Chức vụ không hợp lệ");
     }
     const nv = {
+      Avatar: payload.Avatar,
       MSNV: payload.MSNV,
       HoTenNV: payload.HoTenNV,
       Password: payload.Password,
@@ -43,6 +44,7 @@ class NhanVienService {
   async update(id, payload) {
     const update = {
       $set: {
+        Avatar: payload.Avatar,
         MSNV: payload.MSNV,
         HoTenNV: payload.HoTenNV,
         ChucVu: payload.ChucVu,
