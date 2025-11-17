@@ -8,7 +8,7 @@
         <td class="cell avatar" :title="book.BiaSach">
             <div class="cell-content">
                 <img :src="book.BiaSach" :alt="`Bìa sách ${book.TenSach || ''}`" class="book-cover"
-                    v-if="book.BiaSach" />
+                    v-if="book.BiaSach  " />
                 <div v-else class="cover-placeholder">🖼️</div>
             </div>
         </td>

@@ -220,8 +220,8 @@ exports.updateProfile = async (req, res, next) => {
     } // Xử lý Avatar (nếu có file)
 
     if (req.file) {
-      payload.AvatarUrl = req.file.path;
-      console.log("Avatar path added:", payload.AvatarUrl);
+      payload.Avatar = req.file.path;
+      console.log("Avatar path added:", payload.Avatar);
     } // XỬ LÝ TRƯỜNG HỢP KHÔNG CÓ DỮ LIỆU CẬP NHẬT
 
     if (!Object.keys(payload).length) {
