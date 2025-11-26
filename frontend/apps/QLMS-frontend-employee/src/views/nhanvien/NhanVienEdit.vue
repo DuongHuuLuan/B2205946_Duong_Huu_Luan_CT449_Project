@@ -11,7 +11,6 @@
 <script>
 import NhanVienForm from "@/components/nhanvien/NhanVienForm.vue"; // Đã sửa tên component
 import NhanVienService from "@/services/nhanvien.service";
-import FileService from "@/services/file.service"; // *GIẢ ĐỊNH*: Bạn có FileService để upload ảnh
 import Swal from "sweetalert2";
 
 export default {

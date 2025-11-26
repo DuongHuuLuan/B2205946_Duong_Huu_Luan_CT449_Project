@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const docgiaController = require("../controllers/docgia.controller");
-
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs"); // Import fs module
 // Middleware cho từng loại người dùng
 const {
   verifyToken: verifyNhanVien,
@@ -12,8 +14,41 @@ const {
   authorizeRoleDocGia,
 } = require("../middlewares/auth.docgia.middleware");
 
+// Cấu hình Multer (giữ nguyên)
+const UPLOAD_DIR = "uploads/docgia/";
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    console.log(`Created upload directory: ${UPLOAD_DIR}`);
+  }
+} catch (error) {
+  console.error("ERROR creating upload directory:", error);
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: function (req, file, cb) {
+    // Nếu là tạo độc giả mới, req.user chưa có
+    // Dùng MaDocGia trong body (được gửi trước file)
+    const maDocGia = req.body.MaDocGia || "unknown";
+    cb(
+      null,
+      `docgia-${maDocGia}-${Date.now()}${path.extname(file.originalname)}`
+    );
+  },
+});
+
+const uploadAvatar = multer({
+  storage: storage,
+  limits: { fileSize: 1024 * 1024 * 2 }, // 2MB
+});
+// ------------------------------------------------
+
 // ROUTE CHO NHÂN VIÊN
 
+// 1. POST /api/docgia (Tạo độc giả KHÔNG file - gửi JSON)
 router
   .route("/")
   .get(
@@ -24,8 +59,23 @@ router
   .post(
     verifyNhanVien,
     authorizeRoleNhanVien(["Admin", "QuanLy", "ThuThu"]),
-    docgiaController.create
+    docgiaController.create // <-- KHÔNG CÓ MULTER
+  )
+  .delete(
+    verifyNhanVien,
+    authorizeRoleNhanVien(["Admin"]),
+    docgiaController.deleteAll
   );
+
+// 2. POST /api/docgia/with-avatar (Tạo độc giả CÓ file - gửi FormData)
+// Frontend cần gọi route này khi có file
+router.post(
+  "/with-avatar",
+  verifyNhanVien,
+  authorizeRoleNhanVien(["Admin", "QuanLy", "ThuThu"]),
+  uploadAvatar.single("Avatar"), // <-- CÓ MULTER Ở ĐÂY
+  docgiaController.createWithAvatar // <-- Dùng controller mới
+);
 
 router
   .route("/:id")
@@ -37,6 +87,7 @@ router
   .put(
     verifyNhanVien,
     authorizeRoleNhanVien(["Admin", "QuanLy"]),
+    uploadAvatar.single("Avatar"), // <-- THÊM MULTER cho PUT /:id để sửa (nếu có file)
     docgiaController.update
   )
   .delete(
@@ -45,109 +96,23 @@ router
     docgiaController.delete
   );
 
-// ROUTE CHO ĐỘC GIẢ
+// ROUTE CHO ĐỘC GIẢ (Giữ nguyên)
 
 // Xem thông tin cá nhân
 router.get(
   "/profile/me",
   verifyDocGia,
   authorizeRoleDocGia(),
-  async (req, res, next) => {
-    try {
-      const DocGiaService = require("../services/docgia.service");
-      const MongoDB = require("../utils/mongodb.util");
-      const ApiError = require("../api-error");
-      const service = new DocGiaService(MongoDB.client);
-
-      const docGia = await service.findOne({ MaDocGia: req.user.MaDocGia });
-      if (!docGia) return next(new ApiError(404, "Không tìm thấy Độc giả"));
-
-      const { Password, ...userWithoutPassword } = docGia;
-      res.send(userWithoutPassword);
-    } catch (error) {
-      console.error(error);
-      return next(new ApiError(500, "Lỗi khi lấy thông tin profile"));
-    }
-  }
+  docgiaController.getProfile // Chuyển logic vào controller để tránh trùng lặp code
 );
 
-// phần PUT trong routes/docgia.route.js (thay thế phần hiện tại nếu cần)
+// Thêm uploadAvatar.single('Avatar') vào trước Controller
 router.put(
   "/profile/update",
   verifyDocGia,
   authorizeRoleDocGia(),
-  async (req, res, next) => {
-    try {
-      const DocGiaService = require("../services/docgia.service");
-      const MongoDB = require("../utils/mongodb.util");
-      const ApiError = require("../api-error");
-      const service = new DocGiaService(MongoDB.client);
-
-      if (!req.user || !req.user.MaDocGia) {
-        return next(new ApiError(401, "Không xác thực người dùng"));
-      } // [Giữ nguyên logic whitelist và chuẩn hoá payload]
-
-      const allowed = [
-        "HoLot",
-        "Ten",
-        "NgaySinh",
-        "Phai",
-        "DiaChi",
-        "DienThoai",
-        "Password",
-      ];
-      const payload = {};
-      for (const k of allowed) {
-        if (Object.prototype.hasOwnProperty.call(req.body, k)) {
-          payload[k] = req.body[k];
-        }
-      }
-
-      if (payload.NgaySinh && typeof payload.NgaySinh === "string") {
-        const d = new Date(payload.NgaySinh);
-        if (!isNaN(d.getTime())) payload.NgaySinh = d;
-      } // Lấy bản ghi gốc để so sánh và để trả về nếu không có thay đổi
-
-      const existingDoc = await service.findOne({
-        MaDocGia: req.user.MaDocGia,
-      });
-
-      if (!existingDoc) {
-        // Nếu không tìm thấy, đây mới là lỗi 404 thực sự
-        return next(new ApiError(404, "Không tìm thấy Độc giả"));
-      } // Tiến hành cập nhật
-
-      const updatedDoc = await service.update(
-        { MaDocGia: req.user.MaDocGia },
-        payload
-      ); // *** ĐIỂM SỬA LỖI CHÍNH ***
-
-      if (!updatedDoc) {
-        // updatedDoc == null nghĩa là:
-        // 1. Đã tìm thấy (vì đã kiểm tra existingDoc ở trên), NHƯNG KHÔNG CÓ TRƯỜNG NÀO THAY ĐỔI
-        const { Password, ...publicProfile } = existingDoc;
-        return res.status(200).send({
-          message: "Cập nhật thành công (Không có thay đổi dữ liệu).",
-          profile: publicProfile,
-        });
-      } // THÀNH CÔNG VÀ CÓ THAY ĐỔI
-
-      const { Password, ...publicProfile } = updatedDoc;
-
-      return res.send({
-        message: "Cập nhật thông tin thành công",
-        profile: publicProfile,
-      });
-    } catch (error) {
-      // [Giữ nguyên logic xử lý lỗi]
-      console.error("updateProfile ERROR:", error);
-      if (process.env.NODE_ENV === "development") {
-        return res
-          .status(500)
-          .json({ message: error.message, stack: error.stack });
-      }
-      return next(new ApiError(500, "Lỗi khi cập nhật profile"));
-    }
-  }
+  uploadAvatar.single("Avatar"), // <-- MULTER ĐƯỢC GẮN Ở ĐÂY
+  docgiaController.updateProfile
 );
+
 module.exports = router;

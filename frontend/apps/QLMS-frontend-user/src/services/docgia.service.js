@@ -28,10 +28,7 @@ class DocGiaService {
   }
 
   async uploadAvatar(formData) {
-    const res = await this.privateApi.post("/profile/avatar", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    return res;
+    return await this.privateApi.put("/profile/update", formData);
   }
 }
 

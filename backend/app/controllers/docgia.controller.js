@@ -1,16 +1,66 @@
 const ApiError = require("../api-error");
 const DocGiaService = require("../services/docgia.service");
 const MongoDB = require("../utils/mongodb.util");
+const { ObjectId } = require("mongodb");
 
-exports.create = async (req, res, next) => {
+/**
+ * Hàm chung để tạo Độc giả
+ * @param {Object} req - Request object
+ * @param {boolean} withFile - True nếu request có upload file (đã qua Multer)
+ */
+const createDocGia = async (req, res, next, withFile = false) => {
+  // Nếu có file, đường dẫn file sẽ ở req.file.path
+  // Nếu không file, req.body chứa JSON
+
+  // Kiểm tra data cơ bản
   if (!req.body?.Ten) return next(new ApiError(400, "Tên không được trống"));
+  if (!req.body?.MaDocGia)
+    return next(new ApiError(400, "Mã Độc giả không được trống"));
+
   try {
     const docGiaService = new DocGiaService(MongoDB.client);
-    const document = await docGiaService.create(req.body);
-    res.send(document);
+
+    let payload = { ...req.body };
+
+    // Nếu đã qua Multer thành công và có file, gán path vào payload
+    if (withFile && req.file) {
+      payload.Avatar = req.file.path;
+    }
+
+    // Kiểm tra xem MaDocGia đã tồn tại chưa
+    const existingDoc = await docGiaService.findOne({
+      MaDocGia: payload.MaDocGia,
+    });
+    if (existingDoc) {
+      return next(new ApiError(400, "Mã Độc giả đã tồn tại."));
+    }
+
+    const document = await docGiaService.create(payload);
+
+    // Kiểm tra nếu insert thành công
+    if (document.acknowledged && document.insertedId) {
+      const newDoc = await docGiaService.findById(document.insertedId);
+      // Trả về profile không có mật khẩu
+      const { Password, ...docWithoutPassword } = newDoc;
+      res.send(docWithoutPassword);
+    } else {
+      return next(new ApiError(500, "Không thể tạo Độc giả."));
+    }
   } catch (error) {
+    console.error("CREATE ERROR:", error);
     return next(new ApiError(500, "Lỗi khi tạo Độc giả mới"));
   }
+};
+
+exports.create = async (req, res, next) => {
+  // Nếu không có file (request gửi application/json)
+  return createDocGia(req, res, next, false);
+};
+
+// Hàm tạo độc giả với Multer (cho route POST /with-avatar)
+exports.createWithAvatar = async (req, res, next) => {
+  // Multer đã chạy, req.file có thể có hoặc không
+  return createDocGia(req, res, next, true);
 };
 
 exports.findAll = async (req, res, next) => {
@@ -72,16 +122,19 @@ exports.update = async (req, res, next) => {
   try {
     const docGiaService = new DocGiaService(MongoDB.client);
 
+    let payload = { ...req.body };
+
+    // Nếu có file (đã qua Multer), gán path vào payload
+    if (req.file) {
+      payload.Avatar = req.file.path;
+    }
+
     // Thực hiện cập nhật (service sẽ xử lý id hoặc MaDocGia)
-    const updated = await docGiaService.update(req.params.id, req.body);
+    const updated = await docGiaService.update(req.params.id, payload);
 
     console.log(">> update result:", updated);
 
     if (!updated) {
-      // Không có document trả về từ update. Có thể do:
-      // - không tìm thấy document (404)
-      // - hoặc payload chỉ chứa giá trị giống hệt (không thay đổi)
-      // Hãy kiểm tra bản ghi gốc để phân biệt
       const existingById = await docGiaService
         .findById(req.params.id)
         .catch(() => null);
@@ -97,15 +150,20 @@ exports.update = async (req, res, next) => {
       }
 
       // existing tồn tại -> kiểm tra xem payload có thực sự tạo khác biệt không
-      const payload = { ...req.body };
+      const checkPayload = { ...req.body };
       // loại bỏ các field không cho phép so sánh (ví dụ MaDocGia)
-      delete payload.MaDocGia;
-      delete payload.Password; // password thường bị xử lý riêng, bỏ qua khi so sánh
+      delete checkPayload.MaDocGia;
+      delete checkPayload.Password; // password thường bị xử lý riêng, bỏ qua khi so sánh
+
+      // Thêm trường Avatar (nếu có) để so sánh (đã được gán từ req.file.path nếu có file)
+      if (payload.Avatar) {
+        checkPayload.Avatar = payload.Avatar;
+      }
 
       // so sánh từng field trong payload với existing
       let hasDiff = false;
-      for (const k of Object.keys(payload)) {
-        const newVal = payload[k];
+      for (const k of Object.keys(checkPayload)) {
+        const newVal = checkPayload[k];
         const oldVal = existing[k];
 
         // chuẩn hoá ngày (nếu là string YYYY-MM-DD)

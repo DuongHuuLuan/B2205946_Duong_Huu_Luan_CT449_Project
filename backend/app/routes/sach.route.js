@@ -1,54 +1,8 @@
-// // src/routes/sach.route.js
-// const express = require("express");
-// const sachController = require("../controllers/sach.controller");
-// const verifyToken = require("../middlewares/authJwt");
-// const authorizeRole = require("../middlewares/role");
-// const {
-//   // verifyToken,
-//   authorizeRoleDocGia,
-// } = require("../middlewares/auth.docgia.middleware");
-// const router = express.Router();
-
-// router.get(
-//   "/available",
-//   verifyToken,
-//   authorizeRoleDocGia(),
-//   sachController.findAvailable
-// );
-
-// router.get("/:id", verifyToken, authorizeRoleDocGia(), sachController.findOne);
-
-// router
-//   .route("/")
-//   .get(
-//     verifyToken,
-//     authorizeRole(["Admin", "QuanLy", "ThuThu", "HoTro"]),
-//     sachController.findAll
-//   )
-//   .post(
-//     verifyToken,
-//     authorizeRole(["Admin", "QuanLy", "ThuThu"]),
-//     sachController.create
-//   );
-
-// router
-//   .route("/:id")
-//   .get(
-//     verifyToken,
-//     authorizeRole(["Admin", "QuanLy", "ThuThu", "HoTro"]),
-//     sachController.findOne
-//   )
-//   .put(
-//     verifyToken,
-//     authorizeRole(["Admin", "QuanLy", "ThuThu"]),
-//     sachController.update
-//   )
-//   .delete(verifyToken, authorizeRole(["Admin"]), sachController.delete);
-
-// module.exports = router;
-
 const express = require("express");
 const sachController = require("../controllers/sach.controller");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs"); // Import module fs để xử lý file/thư mục
 
 const {
   // Độc giả
@@ -64,12 +18,39 @@ const {
 
 const router = express.Router();
 
+const UPLOAD_DIR = "uploads/sach/";
+
+// *** ĐẢM BẢO THƯ MỤC UPLOAD TỒN TẠI ***
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    console.log(`Created upload directory: ${UPLOAD_DIR}`);
+  }
+} catch (error) {
+  console.error("ERROR creating upload directory for Sách:", error);
+}
+// ****************************************
+
+const storageSach = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Sử dụng thư mục đã được đảm bảo tồn tại
+    cb(null, UPLOAD_DIR);
+  },
+  filename: function (req, file, cb) {
+    // Tên file: sach-timestamp.ext
+    cb(null, `sach-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+const uploadBiaSach = multer({
+  storage: storageSach,
+  limits: { fileSize: 1024 * 1024 * 5 }, // Giới hạn 5MB cho ảnh sách
+});
 // ----------------------------------------------------------------------
 // ROUTE CHO ĐỘC GIẢ (Chỉ xem)
 // ----------------------------------------------------------------------
 
 // GET /api/sach/available (Tìm sách có sẵn)
-// Chỉ cần xác thực và ủy quyền là Độc giả
 router.get(
   "/available",
   verifyTokenDocGia, // Sử dụng verifyToken của Độc giả
@@ -78,7 +59,6 @@ router.get(
 );
 
 // GET /api/sach/:id (Xem chi tiết sách)
-// Chỉ cần xác thực và ủy quyền là Độc giả (Để fix lỗi 403 Forbidden bạn gặp trước đó)
 router.get(
   "/:id",
   verifyTokenDocGia, // Sử dụng verifyToken của Độc giả
@@ -89,36 +69,32 @@ router.get(
 // ----------------------------------------------------------------------
 // ROUTE CHO NHÂN VIÊN (Xem, Thêm, Sửa, Xóa)
 router
-  .route("/")
-  // GET /api/sach/ (Tìm tất cả - Dành cho Nhân viên)
+  .route("/") // GET /api/sach/ (Tìm tất cả - Dành cho Nhân viên)
   .get(
     verifyTokenNhanVien, // Sử dụng verifyToken của Nhân viên
     authorizeRoleNhanVien(["Admin", "QuanLy", "ThuThu", "HoTro"]), // Ủy quyền cho Nhân viên
     sachController.findAll
-  )
-  // POST /api/sach/ (Thêm mới - Dành cho Nhân viên)
+  ) // POST /api/sach/ (Thêm mới - Dành cho Nhân viên)
   .post(
     verifyTokenNhanVien, // Sử dụng verifyToken của Nhân viên
     authorizeRoleNhanVien(["Admin", "QuanLy", "ThuThu"]),
+    uploadBiaSach.single("BiaSach"),
     sachController.create
   );
 
 router
-  .route("/:id")
-  // GET /api/sach/:id (Xem chi tiết - Dành cho Nhân viên)
-  // Nếu Độc giả đã có route riêng, có thể bỏ route này hoặc chỉ dùng cho Nhân viên muốn xem thêm thông tin chi tiết hơn.
+  .route("/:id") // GET /api/sach/:id (Xem chi tiết - Dành cho Nhân viên)
   .get(
     verifyTokenNhanVien, // Sử dụng verifyToken của Nhân viên
     authorizeRoleNhanVien(["Admin", "QuanLy", "ThuThu", "HoTro"]),
     sachController.findOne
-  )
-  // PUT /api/sach/:id (Cập nhật - Dành cho Nhân viên)
+  ) // PUT /api/sach/:id (Cập nhật - Dành cho Nhân viên)
   .put(
     verifyTokenNhanVien, // Sử dụng verifyToken của Nhân viên
     authorizeRoleNhanVien(["Admin", "QuanLy", "ThuThu"]),
+    uploadBiaSach.single("BiaSach"),
     sachController.update
-  )
-  // DELETE /api/sach/:id (Xóa - Chỉ Admin)
+  ) // DELETE /api/sach/:id (Xóa - Chỉ Admin)
   .delete(
     verifyTokenNhanVien, // Sử dụng verifyToken của Nhân viên
     authorizeRoleNhanVien(["Admin"]),

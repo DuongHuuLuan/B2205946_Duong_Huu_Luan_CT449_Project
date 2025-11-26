@@ -8,6 +8,12 @@ exports.create = async (req, res, next) => {
     return next(new ApiError(400, "Tên sách không được để trống"));
   }
 
+  // 1. Xử lý file nếu có
+  if (req.file) {
+    // Lưu đường dẫn file vào trường BiaSach
+    req.body.BiaSach = `/uploads/sach/${req.file.filename}`;
+  }
+
   try {
     const sachService = new SachService(MongoDB.client);
     const document = await sachService.create(req.body);
@@ -82,17 +88,78 @@ exports.findOne = async (req, res, next) => {
 };
 
 // Cập nhật sách
+// exports.update = async (req, res, next) => {
+//   if (Object.keys(req.body).length === 0 && !req.file) {
+//     return next(new ApiError(400, "Dữ liệu cập nhật không được trống"));
+//   }
+
+//   try {
+//     const sachService = new SachService(MongoDB.client);
+//     const document = await sachService.update(req.params.id, req.body);
+
+//     if (!document) {
+//       return next(new ApiError(404, "Không tìm thấy sách để cập nhật"));
+//     }
+
+//     return res.send({
+//       message: "Cập nhật sách thành công",
+//       data: document,
+//     });
+//   } catch (error) {
+//     return next(new ApiError(500, `Lỗi khi cập nhật sách id=${req.params.id}`));
+//   }
+// };
+// Cập nhật sách
 exports.update = async (req, res, next) => {
-  if (Object.keys(req.body).length === 0) {
+  if (Object.keys(req.body).length === 0 && !req.file) {
+    // Kiểm tra cả req.file
     return next(new ApiError(400, "Dữ liệu cập nhật không được trống"));
   }
 
+  const sachService = new SachService(MongoDB.client);
+  const sachId = req.params.id;
+  const oldDocument = await sachService.findById(sachId); // Lấy sách cũ để kiểm tra ảnh cũ
+
+  if (!oldDocument) {
+    // Nếu không tìm thấy sách, xóa file mới nếu có
+    if (req.file) {
+      const fs = require("fs");
+      fs.unlinkSync(req.file.path);
+    }
+    return next(new ApiError(404, "Không tìm thấy sách để cập nhật"));
+  }
+
+  let oldBiaSachPath = null;
+  // 1. Xử lý file mới nếu có
+  if (req.file) {
+    oldBiaSachPath = oldDocument.BiaSach; // Lưu lại đường dẫn cũ
+    // Lưu đường dẫn file mới vào body
+    req.body.BiaSach = `/uploads/sach/${req.file.filename}`;
+  }
+
   try {
-    const sachService = new SachService(MongoDB.client);
-    const document = await sachService.update(req.params.id, req.body);
+    const document = await sachService.update(sachId, req.body);
 
     if (!document) {
       return next(new ApiError(404, "Không tìm thấy sách để cập nhật"));
+    }
+
+    // 2. Xóa ảnh cũ nếu update thành công và có ảnh mới
+    if (oldBiaSachPath) {
+      const fs = require("fs");
+      const path = require("path");
+      // oldBiaSachPath có dạng /uploads/sach/ten_file.jpg, ta cần path tuyệt đối
+      // Giả sử server.js dùng __dirname để phục vụ file tĩnh
+      const oldAbsolutePath = path.join(
+        __dirname,
+        "../../uploads/sach",
+        path.basename(oldBiaSachPath)
+      );
+
+      // Kiểm tra xem file cũ có tồn tại không trước khi xóa
+      if (fs.existsSync(oldAbsolutePath)) {
+        fs.unlinkSync(oldAbsolutePath);
+      }
     }
 
     return res.send({
@@ -100,6 +167,11 @@ exports.update = async (req, res, next) => {
       data: document,
     });
   } catch (error) {
+    // Nếu lỗi DB, xóa file mới đã upload
+    if (req.file) {
+      const fs = require("fs");
+      fs.unlinkSync(req.file.path);
+    }
     return next(new ApiError(500, `Lỗi khi cập nhật sách id=${req.params.id}`));
   }
 };

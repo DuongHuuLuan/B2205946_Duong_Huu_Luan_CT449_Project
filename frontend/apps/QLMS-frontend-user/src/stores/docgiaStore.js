@@ -193,38 +193,29 @@ export const useDocGiaStore = defineStore("docgia", {
     async uploadAvatar(file) {
       if (!file) throw new Error("No file provided");
       const fd = new FormData();
-      fd.append("avatar", file);
+      fd.append("Avatar", file);
       this.loading = true;
       this.error = null;
       try {
+        // Giả sử DocGiaService.uploadAvatar gọi PUT /profile/update
         const res = await DocGiaService.uploadAvatar(fd);
         const maybe = unwrap(res);
+        const updatedProfile =
+          maybe?.data ?? maybe?.profile ?? maybe?.user ?? maybe; // 🚨 NẾU BACKEND TRẢ VỀ TOÀN BỘ PROFILE ĐÃ CẬP NHẬT
 
-        const avatarUrl =
-          maybe?.avatarUrl ??
-          maybe?.url ??
-          maybe?.data?.avatarUrl ??
-          maybe?.profile?.avatar ??
-          maybe?.avatar ??
-          null;
-
-        if (avatarUrl) {
-          this.setProfile({ ...(this.profile || {}), avatar: avatarUrl });
-          return avatarUrl;
-        }
-
-        const updatedProfile = maybe?.profile ?? maybe?.user ?? maybe;
         if (
           updatedProfile &&
-          (updatedProfile?.avatar || updatedProfile?.Avatar)
+          (updatedProfile?.Avatar || updatedProfile?.avatar)
         ) {
-          const avatar = updatedProfile.avatar || updatedProfile.Avatar;
-          this.setProfile({ ...(this.profile || {}), avatar });
+          // Lấy đường dẫn avatar mới
+          const avatar = updatedProfile.Avatar || updatedProfile.avatar;
+          // Cập nhật Profile trong Store, sử dụng tên trường 'Avatar'
+          this.setProfile({ ...(this.profile || {}), Avatar: avatar });
           return avatar;
-        }
+        } // Logic dự phòng: Nếu không lấy được URL mới, gọi fetchProfile để cập nhật lại
 
         await this.fetchProfile();
-        return this.profile?.avatar ?? null;
+        return this.profile?.Avatar ?? null;
       } catch (err) {
         this.error =
           err?.response?.data?.message ?? err?.message ?? "Upload ảnh thất bại";

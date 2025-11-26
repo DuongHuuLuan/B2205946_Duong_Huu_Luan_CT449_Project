@@ -1,4 +1,3 @@
-// backend/app/services/docgia.service.js
 const { ObjectId } = require("mongodb");
 const bcrypt = require("bcrypt");
 
@@ -7,10 +6,13 @@ class DocGiaService {
     this.DocGia = client.db().collection("docgia");
   }
 
+  /**
+   * Chỉ trích xuất các trường dữ liệu, LOẠI BỎ Avatar và các trường ID/Pass không liên quan
+   * (Avatar sẽ được gán ở Controller sau khi Multer xử lý)
+   */
   extractDocGiaData(payload) {
     const docgia = {
       MaDocGia: payload.MaDocGia,
-      Avatar: payload.Avatar,
       HoLot: payload.HoLot,
       Ten: payload.Ten,
       NgaySinh: payload.NgaySinh,
@@ -18,6 +20,8 @@ class DocGiaService {
       DiaChi: payload.DiaChi,
       DienThoai: payload.DienThoai,
       Password: payload.Password,
+      // LOẠI BỎ: Avatar: payload.Avatar,
+      // Avatar sẽ được xử lý riêng trong controller khi có file
     };
 
     Object.keys(docgia).forEach(
@@ -29,6 +33,18 @@ class DocGiaService {
 
   async create(payload) {
     const docgia = this.extractDocGiaData(payload);
+
+    // Nếu có Avatar path từ controller (sau khi Multer xử lý)
+    if (payload.Avatar) {
+      docgia.Avatar = payload.Avatar;
+    }
+
+    // Hash password nếu có
+    if (docgia.Password) {
+      const salt = await bcrypt.genSalt(10);
+      docgia.Password = await bcrypt.hash(docgia.Password, salt);
+    }
+
     const result = await this.DocGia.insertOne(docgia);
     return result;
   }
@@ -64,6 +80,11 @@ class DocGiaService {
 
     const updateData = this.extractDocGiaData(payload);
 
+    // Nếu có Avatar path từ controller
+    if (payload.Avatar) {
+      updateData.Avatar = payload.Avatar;
+    }
+
     if (!updateData || Object.keys(updateData).length === 0) {
       return null;
     }
@@ -81,6 +102,7 @@ class DocGiaService {
         { returnDocument: "after" }
       );
     } catch (err) {
+      // Logic xử lý MongoDB version cũ
       if (err && /returnDocument|unknown option/i.test(err.message)) {
         result = await this.DocGia.findOneAndUpdate(
           filter,

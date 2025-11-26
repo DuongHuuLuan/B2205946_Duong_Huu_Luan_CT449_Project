@@ -3,6 +3,7 @@
         <div class="top">
             <div class="avatar-wrap">
                 <div class="avatar-ring">
+                    <!-- Sử dụng đường dẫn tương đối trực tiếp (Proxy trong Vite sẽ tự chuyển tiếp /uploads/...) -->
                     <img v-if="avatarUrl" :src="avatarUrl" alt="avatar" class="avatar" />
                     <div v-else class="avatar-empty">{{ initials }}</div>
                 </div>
@@ -35,7 +36,13 @@ const emit = defineEmits(["avatar-uploaded", "edit"]);
 const fileInput = ref(null);
 
 const avatarUrl = computed(() => {
-    return props.profile?.Avatar || null;
+    const path = props.profile?.Avatar || null;
+    if (!path) return null;
+
+    // Trong trường hợp này, `path` sẽ là đường dẫn tương đối (ví dụ: "/uploads/docgia/abc.jpg")
+    // Vì đã có proxy, trình duyệt sẽ yêu cầu: http://localhost:3002/uploads/...
+    // Và Vite Proxy sẽ chuyển tiếp nó thành: http://localhost:3000/uploads/...
+    return path;
 });
 
 const fullName = computed(() => {
