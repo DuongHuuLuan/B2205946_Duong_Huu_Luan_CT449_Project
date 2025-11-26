@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const mime = require("mime-types");
 const docgiaRouter = require("./app/routes/docgia.route");
 const docgiaAuthRouter = require("./app/routes/docgiaauth.route");
 const sachRouter = require("./app/routes/sach.route");
@@ -22,7 +23,17 @@ app.use("/api/theodoimuonsach", theodoimuonsach);
 app.use("/api/nhanvien", nhanvien);
 app.use("/api/auth", authRouter);
 app.use("/api/thongke", thongkeRouter);
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res, filepath) => {
+      const mimeType = mime.lookup(filepath) || "application/octet-stream";
+      res.setHeader("Content-Type", mimeType);
+      // Bonus: cache lâu hơn
+      res.setHeader("Cache-Control", "public, max-age=31536000");
+    },
+  })
+);
 app.use(notFound);
 app.use(errorHandler);
 

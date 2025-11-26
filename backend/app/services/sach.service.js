@@ -8,19 +8,19 @@ class SachService {
   extractSachData(payload) {
     const sach = {
       MaSach: payload.MaSach,
-      BiaSach: payload.BiaSach,
       TenSach: payload.TenSach,
-      DonGia: payload.DonGia,
-      SoQuyen: payload.SoQuyen,
-      NamXuatBan: payload.NamXuatBan,
+      BiaSach: payload.BiaSach,
+      DonGia: payload.DonGia ? Number(payload.DonGia) : undefined,
+      SoQuyen: payload.SoQuyen ? Number(payload.SoQuyen) : undefined, // ÉP SỐ
+      NamXuatBan: payload.NamXuatBan ? Number(payload.NamXuatBan) : undefined,
       MaNXB: payload.MaNXB,
       TacGia: payload.TacGia,
     };
 
+    // Xóa field undefined
     Object.keys(sach).forEach(
       (key) => sach[key] === undefined && delete sach[key]
     );
-
     return sach;
   }
 

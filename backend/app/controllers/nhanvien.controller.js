@@ -2,6 +2,9 @@ const NhanVienService = require("../services/nhanvien.service");
 const MongoDB = require("../utils/mongodb.util");
 const ApiError = require("../api-error");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
+
 // Thêm nhân viên (chỉ Admin mới có quyền)
 exports.create = async (req, res, next) => {
   if (req.user.ChucVu !== "Admin") {
@@ -15,6 +18,10 @@ exports.create = async (req, res, next) => {
   }
 
   try {
+    if (req.file) {
+      req.body.Avatar = `/uploads/nhanvien/${req.file.filename}`;
+    }
+
     const nvService = new NhanVienService(MongoDB.client);
 
     const salt = await bcrypt.genSalt(10);
@@ -22,7 +29,7 @@ exports.create = async (req, res, next) => {
 
     const nhanVienData = {
       MSNV: req.body.MSNV,
-      Avatar: req.body.Avatar,
+      Avatar: req.body.Avatar || null,
       HoTenNV: req.body.HoTenNV,
       Password: hashedPassword,
       ChucVu: req.body.ChucVu || "HoTro",
@@ -31,8 +38,21 @@ exports.create = async (req, res, next) => {
     };
 
     const document = await nvService.create(nhanVienData);
-    return res.send(document);
+    return res.send({
+      message: "Thêm nhân viên thành công!",
+      data: document,
+    });
   } catch (error) {
+    // Nếu lỗi → xóa file ảnh đã upload (tránh rác)
+    if (req.file) {
+      const fs = require("fs");
+      const path = require("path");
+      const filePath = path.join(__dirname, "..", "..", req.file.path);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
     if (error.code === 11000) {
       return next(new ApiError(400, "Mã số nhân viên đã tồn tại."));
     }
@@ -79,12 +99,11 @@ exports.findOne = async (req, res, next) => {
 
 // Cập nhật nhân viên
 exports.update = async (req, res, next) => {
-  if (Object.keys(req.body).length === 0) {
+  if (Object.keys(req.body).length === 0 && !req.file) {
     return next(new ApiError(400, "Dữ liệu cập nhật không được trống"));
   }
 
   try {
-    // Admin cập nhật được tất cả, nhân viên thường chỉ được cập nhật bản thân
     if (req.user.ChucVu !== "Admin" && req.user.MSNV !== req.params.id) {
       return next(
         new ApiError(403, "Bạn không có quyền cập nhật nhân viên khác")
@@ -92,16 +111,49 @@ exports.update = async (req, res, next) => {
     }
 
     const nvService = new NhanVienService(MongoDB.client);
-    const document = await nvService.update(req.params.id, req.body);
-
-    if (!document) {
-      return next(new ApiError(404, "Không tìm thấy nhân viên để cập nhật"));
+    const oldNV = await nvService.findById(req.params.id);
+    if (!oldNV) {
+      if (req.file) fs.unlinkSync(req.file.path); // xóa file nếu lỗi
+      return next(new ApiError(404, "Không tìm thấy nhân viên"));
     }
-    return res.send({ message: "Cập nhật nhân viên thành công" });
+
+    const updateData = { ...req.body };
+
+    // Xử lý avatar mới
+    if (req.file) {
+      updateData.Avatar = `/uploads/nhanvien/${req.file.filename}`;
+
+      // XÓA ẢNH CŨ nếu có và không phải ảnh mặc định
+      if (oldNV.Avatar && oldNV.Avatar.includes("/uploads/nhanvien/")) {
+        const oldPath = path.join(
+          __dirname,
+          "..",
+          "..",
+          "uploads",
+          "nhanvien",
+          path.basename(oldNV.Avatar)
+        );
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+    }
+
+    // Xử lý password mới
+    if (updateData.Password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.Password = await bcrypt.hash(updateData.Password, salt);
+    }
+
+    const document = await nvService.update(req.params.id, updateData);
+
+    return res.send({
+      message: "Cập nhật nhân viên thành công",
+      data: document.value || document,
+    });
   } catch (error) {
-    return next(
-      new ApiError(500, `Lỗi khi cập nhật nhân viên id=${req.params.id}`)
-    );
+    if (req.file) fs.unlinkSync(req.file.path);
+    return next(new ApiError(500, `Lỗi khi cập nhật: ${error.message}`));
   }
 };
 

@@ -1,60 +1,64 @@
 <template>
-    <form @submit.prevent="submitNhanVien" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="MSNV" class="form-label">Mã Số Nhân Viên (MSNV):</label>
-            <input type="text" id="MSNV" class="form-control" v-model="nhanVienLocal.MSNV" required />
-        </div>
-
-        <div class="mb-3">
-            <label for="HoTenNV" class="form-label">Họ Tên Nhân Viên:</label>
-            <input type="text" id="HoTenNV" class="form-control" v-model="nhanVienLocal.HoTenNV" required />
-        </div>
-
-        <div class="mb-3 avatar-section">
-            <label class="form-label d-block">Ảnh Đại Diện (Avatar):</label>
-
-            <div class="current-avatar-wrapper">
-                <img v-if="nhanVienLocal.Avatar" :src="nhanVienLocal.Avatar" alt="Avatar hiện tại"
-                    class="current-avatar" />
-                <div v-else class="default-avatar">{{ getInitial(nhanVienLocal) }}</div>
+    <form @submit.prevent="submitNhanVien" class="row g-3">
+        <!-- AVATAR -->
+        <div class="col-12 text-center mb-4">
+            <label class="form-label fw-bold text-success">Avatar Nhân Viên</label>
+            <div class="avatar-preview-wrapper mx-auto">
+                <img v-if="previewUrl" :src="previewUrl" alt="Avatar" class="avatar-preview rounded-circle shadow" />
+                <div v-else
+                    class="avatar-preview bg-primary-custom text-white d-flex align-items-center justify-content-center rounded-circle shadow">
+                    <span class="fs-1 fw-bold">{{ initials }}</span>
+                </div>
             </div>
-
-            <input type="file" id="AvatarFile" class="form-control mt-2" @change="handleAvatarChange"
-                accept="image/*" />
-            <small class="form-text text-muted">Chọn ảnh mới để thay đổi Avatar.</small>
-        </div>
-        <div class="mb-3">
-            <label for="Password" class="form-label">
-                Mật Khẩu:
-                <span v-if="nhanVienLocal._id" class="text-muted">(Để trống nếu không đổi)</span>
-            </label>
-            <input type="password" id="Password" class="form-control" v-model="nhanVienLocal.Password"
-                :required="!nhanVienLocal._id" />
+            <input type="file" class="form-control w-75 mx-auto mt-3" accept="image/*" @change="handleAvatarChange" />
+            <small class="text-muted">Tối đa 3MB, định dạng JPG/PNG</small>
         </div>
 
-        <div class="mb-3">
-            <label for="ChucVu" class="form-label">Chức Vụ:</label>
-            <select id="ChucVu" class="form-control" v-model="nhanVienLocal.ChucVu" required>
-                <option value="Admin">Admin</option>
-                <option value="QuanLy">Quản Lý</option>
-                <option value="ThuThu">Thủ Thư</option>
+        <!-- FORM FIELDS -->
+        <div class="col-md-6">
+            <label>MSNV <span class="text-danger">*</span></label>
+            <input v-model="nhanVienLocal.MSNV" class="form-control" required />
+        </div>
+        <div class="col-md-6">
+            <label>Họ Tên <span class="text-danger">*</span></label>
+            <input v-model="nhanVienLocal.HoTenNV" class="form-control" required />
+        </div>
+
+        <div class="col-md-6" v-if="!nhanVienLocal._id">
+            <label>Mật Khẩu <span class="text-danger">*</span></label>
+            <input type="password" v-model="nhanVienLocal.Password" class="form-control" required />
+        </div>
+        <div class="col-md-6" v-else>
+            <label>Mật Khẩu Mới <small class="text-muted">(để trống nếu không đổi)</small></label>
+            <input type="password" v-model="nhanVienLocal.Password" class="form-control"
+                placeholder="Nhập để đổi mật khẩu" />
+        </div>
+
+        <div class="col-md-6">
+            <label>Chức Vụ <span class="text-danger">*</span></label>
+            <select v-model="nhanVienLocal.ChucVu" class="form-select" required>
                 <option value="HoTro">Hỗ Trợ</option>
+                <option value="ThuThu">Thủ Thư</option>
+                <option value="QuanLy">Quản Lý</option>
+                <option value="Admin">Admin</option>
             </select>
         </div>
 
-        <div class="mb-3">
-            <label for="DiaChi" class="form-label">Địa Chỉ:</label>
-            <input type="text" id="DiaChi" class="form-control" v-model="nhanVienLocal.DiaChi" />
+        <div class="col-md-6">
+            <label>Địa Chỉ</label>
+            <input v-model="nhanVienLocal.DiaChi" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label>Số Điện Thoại</label>
+            <input v-model="nhanVienLocal.SoDienThoai" class="form-control" />
         </div>
 
-        <div class="mb-3">
-            <label for="SoDienThoai" class="form-label">Số Điện Thoại:</label>
-            <input type="text" id="SoDienThoai" class="form-control" v-model="nhanVienLocal.SoDienThoai" />
+        <div class="col-12 text-center mt-4">
+            <button type="submit" class="btn btn-success px-5">
+                <i class="fas fa-save me-2"></i>
+                {{ nhanVienLocal._id ? 'Cập Nhật' : 'Thêm Mới' }}
+            </button>
         </div>
-
-        <button type="submit" class="btn btn-success">
-            <i class="fas fa-save"></i> {{ nhanVienLocal._id ? "Cập Nhật" : "Lưu" }}
-        </button>
     </form>
 </template>
 
@@ -66,105 +70,108 @@ export default {
     data() {
         return {
             nhanVienLocal: {},
-            newAvatarFile: null, // Lưu trữ file ảnh mới được chọn
+            newAvatarFile: null,
+            previewUrl: null
         };
+    },
+    computed: {
+        initials() {
+            return (this.nhanVienLocal.HoTenNV || this.nhanVienLocal.MSNV || "?").charAt(0).toUpperCase();
+        }
     },
     watch: {
         nhanVien: {
             handler(newVal) {
-                this.nhanVienLocal = newVal ? JSON.parse(JSON.stringify(newVal)) : {};
-                this.newAvatarFile = null; // Reset file khi prop thay đổi
-
-                // Luôn reset trường password khi tải dữ liệu
-                if (this.nhanVienLocal.Password) {
+                this.nhanVienLocal = newVal ? { ...newVal } : {};
+                this.previewUrl = this.nhanVienLocal.Avatar || null;
+                this.newAvatarFile = null;
+                // Reset password khi edit
+                if (this.nhanVienLocal._id) {
                     this.nhanVienLocal.Password = "";
                 }
             },
             immediate: true,
-            deep: true,
-        },
+            deep: true
+        }
     },
     methods: {
-        getInitial(nhanVien) {
-            // Lấy chữ cái đầu của Họ Tên hoặc MSNV
-            return (nhanVien.HoTenNV || nhanVien.MSNV || "?").charAt(0).toUpperCase();
-        },
-        handleAvatarChange(event) {
-            const file = event.target.files[0];
-            this.newAvatarFile = file;
+        handleAvatarChange(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-            // Tạo preview ảnh ngay lập tức
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.nhanVienLocal.Avatar = e.target.result; // Cập nhật tạm thời cho mục đích hiển thị
-                };
-                reader.readAsDataURL(file);
+            if (file.size > 3 * 1024 * 1024) {
+                alert("Ảnh quá lớn! Vui lòng chọn ảnh dưới 3MB");
+                e.target.value = "";
+                return;
             }
+
+            this.newAvatarFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                this.previewUrl = ev.target.result;
+            };
+            reader.readAsDataURL(file);
         },
         submitNhanVien() {
-            const payload = { ...this.nhanVienLocal };
+            const cleanData = { ...this.nhanVienLocal };
+            delete cleanData.Avatar; // không gửi data URL
 
             if (this.newAvatarFile) {
-                // Gửi sự kiện riêng kèm theo file mới được chọn
                 this.$emit("submit:nhanvien-with-file", {
-                    // Loại bỏ Avatar URL khỏi object nhân viên
-                    nhanVien: { ...payload, Avatar: undefined },
+                    nhanVien: cleanData,
                     file: this.newAvatarFile
                 });
             } else {
-                // Gửi sự kiện cập nhật thông thường
-                this.$emit("submit:nhanvien", payload);
+                this.$emit("submit:nhanvien", cleanData);
             }
-        },
-    },
+        }
+    }
 };
 </script>
 
 <style scoped>
-.avatar-section {
-    margin-top: 1rem;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    border: 1px dashed #d1e7dd;
-    /* Dùng màu xanh nhẹ của success/thành công */
-    border-radius: 0.5rem;
-    background-color: #f6fff8;
+/* MÀU CHỦ ĐẠO: XANH DƯƠNG (giống Độc Giả & Sách) */
+:root {
+    --primary: #0d6efd;
+    --primary-light: #cfe2ff;
+    --primary-bg: #e7f1ff;
 }
 
-.current-avatar-wrapper {
-    width: 80px;
-    height: 80px;
-    margin: 0.5rem 0 1rem 0;
+.avatar-preview-wrapper {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 20px;
+    border: 5px solid var(--primary);
     border-radius: 50%;
     overflow: hidden;
-    border: 3px solid #198754;
-    /* Màu xanh lá cây đậm */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.25);
 }
 
-.current-avatar {
+.avatar-preview {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.default-avatar {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #d1e7dd;
-    color: #198754;
-    font-size: 20px;
-    font-weight: bold;
+/* Avatar mặc định khi chưa có ảnh */
+.bg-primary-custom {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
 }
 
-#AvatarFile {
-    max-width: 300px;
+/* Form đẹp hơn */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-success {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+.btn-success:hover {
+    background-color: #0b5ed7 !important;
+    border-color: #0a58ca !important;
 }
 </style>

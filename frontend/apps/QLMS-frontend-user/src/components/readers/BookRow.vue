@@ -7,8 +7,8 @@
 
         <td class="cell avatar" :title="book.BiaSach">
             <div class="cell-content">
-                <!-- Sử dụng coverUrl đã tính toán -->
-                <img :src="coverUrl" :alt="`Bìa sách ${book.TenSach || ''}`" class="book-cover" v-if="coverUrl" />
+                <img :src="book.BiaSach" :alt="`Bìa sách ${book.TenSach || ''}`" class="book-cover"
+                    v-if="book.BiaSach" />
                 <div v-else class="cover-placeholder">🖼️</div>
             </div>
         </td>
@@ -52,18 +52,12 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
 import BorrowButton from "./BorrowButton.vue";
 
 const props = defineProps({
     book: { type: Object, required: true },
 });
 const emit = defineEmits(["view", "borrow"]);
-
-// Sử dụng đường dẫn tương đối, dựa vào cấu hình proxy trong vite.config.js
-const coverUrl = computed(() => {
-    return props.book.BiaSach || null;
-});
 
 function onView() {
     emit("view", props.book);
@@ -267,7 +261,7 @@ const qtyTooltip = qtyValue === 0 ? "Hết sách" : (qtyValue <= 2 ? `Còn ${qty
 
     .cell.name {
         max-width: 180px;
-        width: 40%;
+        width: 36%;
     }
 
     .cell.author {

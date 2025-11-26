@@ -1,9 +1,9 @@
+<!-- src/components/books/BookCard.vue -->
 <template>
     <div class="book-card" :aria-label="`Chi tiết sách ${book.TenSach || ''}`" role="article">
         <h2 class="book-title">{{ book.TenSach || '—' }}</h2>
         <div class="book-cover-wrapper">
-            <!-- Sử dụng coverUrl. Nếu book.BiaSach là đường dẫn tương đối, proxy sẽ xử lý -->
-            <img :src="coverUrl" :alt="`Bìa sách ${book.TenSach || ''}`" class="book-cover" v-if="coverUrl" />
+            <img :src="book.BiaSach" :alt="`Bìa sách ${book.TenSach || ''}`" class="book-cover" v-if="book.BiaSach" />
             <div v-else class="cover-placeholder">🖼️</div>
         </div>
         <p class="meta-line"><strong>Tác giả:</strong> <span>{{ book.TacGia || '—' }}</span></p>
@@ -21,15 +21,8 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
-
-const props = defineProps({
+defineProps({
     book: { type: Object, required: true },
-});
-
-// Sử dụng đường dẫn tương đối, dựa vào cấu hình proxy trong vite.config.js
-const coverUrl = computed(() => {
-    return props.book.BiaSach || null;
 });
 
 function formatPrice(price) {
@@ -188,7 +181,7 @@ function formatPrice(price) {
 /* disabled state */
 .borrow-btn:disabled,
 .borrow-btn[aria-disabled="true"] {
-    background: #e6e7eb;
+    background: #e6e7ee;
     color: #9ca3af;
     cursor: not-allowed;
     box-shadow: none;

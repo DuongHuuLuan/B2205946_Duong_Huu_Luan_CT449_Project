@@ -228,7 +228,7 @@ exports.findAvailable = async (req, res, next) => {
   try {
     const sachService = new SachService(MongoDB.client);
     const documents = await sachService.find({ SoQuyen: { $gt: 0 } });
-
+    // const documents = await sachService.find({}); // test trước
     return res.send({
       message: "Lấy danh sách sách có thể mượn thành công",
       data: documents,

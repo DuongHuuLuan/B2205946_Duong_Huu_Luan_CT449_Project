@@ -1,46 +1,42 @@
 import createApiClient from "./api.service";
-const baseURL = "/api/sach";
 
 class SachService {
-  constructor(baseURL) {
+  constructor(baseURL = "/api/sach") {
     this.api = createApiClient(baseURL);
   }
 
-  // Lấy tất cả sách
-  async getAll(query = {}) {
-    const res = await this.api.get("/", { params: query });
-    return res.data; // { message, data: [...] }
+  async getAll() {
+    return (await this.api.get("/")).data;
   }
 
-  // Lấy sách theo ID
   async get(id) {
-    const res = await this.api.get(`/${id}`);
-    return res.data; // { message, data: {...} }
+    return (await this.api.get(`/${id}`)).data;
   }
 
-  // Thêm sách mới
-  async create(data) {
-    const res = await this.api.post("/", data);
-    return res.data; // { message, data: {...} }
+  // DÙNG CHUNG 1 ROUTE POST / với multer → KHÔNG CẦN /with-cover
+  async createWithCover(sachObj, file = null) {
+    const fd = new FormData();
+    Object.entries(sachObj).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) fd.append(k, v);
+    });
+    if (file) fd.append("BiaSach", file);
+
+    return (await this.api.post("/", fd)).data;
   }
 
-  // Cập nhật sách
-  async update(id, data) {
-    const res = await this.api.put(`/${id}`, data);
-    return res.data; // { message, data: {...} }
+  async updateWithCover(id, sachObj, file = null) {
+    const fd = new FormData();
+    Object.entries(sachObj).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) fd.append(k, v);
+    });
+    if (file) fd.append("BiaSach", file);
+
+    return (await this.api.put(`/${id}`, fd)).data;
   }
 
-  // Xóa sách theo ID
   async delete(id) {
-    const res = await this.api.delete(`/${id}`);
-    return res.data; // { message, data: {...} }
-  }
-
-  // Xóa toàn bộ sách
-  async deleteAll() {
-    const res = await this.api.delete("/");
-    return res.data; // { message, data: { deletedCount } }
+    return (await this.api.delete(`/${id}`)).data;
   }
 }
 
-export default new SachService(baseURL);
+export default new SachService();

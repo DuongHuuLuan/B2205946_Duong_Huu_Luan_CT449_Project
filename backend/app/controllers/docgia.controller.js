@@ -124,9 +124,10 @@ exports.update = async (req, res, next) => {
 
     let payload = { ...req.body };
 
-    // Nếu có file (đã qua Multer), gán path vào payload
+    // Trong createDocGia, update, updateProfile...
     if (req.file) {
-      payload.Avatar = req.file.path;
+      // Chuẩn hóa đường dẫn: luôn bắt đầu bằng /uploads/...
+      payload.Avatar = `/uploads/docgia/${req.file.filename}`;
     }
 
     // Thực hiện cập nhật (service sẽ xử lý id hoặc MaDocGia)
@@ -365,7 +366,6 @@ exports.getBorrowStats = async (req, res, next) => {
       }
     }
 
-    // trả về tên trường dễ dùng ở frontend (camelCase)
     res.json({
       currentBorrowed,
       totalBorrowed,

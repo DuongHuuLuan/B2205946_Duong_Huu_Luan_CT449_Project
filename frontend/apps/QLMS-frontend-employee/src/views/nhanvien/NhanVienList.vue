@@ -151,54 +151,60 @@ export default {
 };
 </script>
 <style scoped>
-/* Định nghĩa chiều rộng cột Avatar */
+/* MÀU CHỦ ĐẠO XANH DƯƠNG */
 .nhanvien-table .avatar-col {
     width: 60px;
-    /* Chiều rộng cố định cho cột */
     text-align: center;
-    padding: 8px 5px;
 }
 
-/* Wrapper để căn giữa và định dạng hình tròn */
 .list-avatar-wrapper {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto;
-    /* Căn giữa trong ô bảng */
-    border: 1px solid #198754;
-    /* Màu viền xanh lá cây (Success) */
+    border: 3px solid #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
 }
 
-/* Style cho ảnh thực tế */
 .list-avatar-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-/* Style cho Avatar mặc định (chữ cái đầu) */
 .list-avatar-default {
     width: 100%;
     height: 100%;
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #d1e7dd;
-    /* Màu nền xanh nhạt */
-    color: #198754;
-    /* Màu chữ xanh đậm */
-    font-size: 16px;
-    font-weight: 600;
 }
 
-/* Căn chỉnh lại các cột trong bảng */
-.nhanvien-table th,
-.nhanvien-table td {
-    vertical-align: middle;
+/* Nút Thêm mới + Sửa */
+.btn-success,
+.btn-warning {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.btn-success:hover {
+    background-color: #0b5ed7 !important;
+}
+
+.btn-warning {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+}
+
+.text-primary {
+    color: #0d6efd !important;
 }
 </style>
