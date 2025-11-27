@@ -17,9 +17,7 @@ class AuthService {
       SoDienThoai: payload.SoDienThoai,
     };
 
-    Object.keys(nv).forEach(
-      (key) => nv[key] === undefined && delete nv[key]
-    );
+    Object.keys(nv).forEach((key) => nv[key] === undefined && delete nv[key]);
     return nv;
   }
 

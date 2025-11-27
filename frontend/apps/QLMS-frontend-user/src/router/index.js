@@ -27,7 +27,7 @@ const routes = [
   {
     path: "/sach",
     name: "sach.list",
-    component: () => import("@/views/readers/BookListView.vue"),
+    component: () => import("@/views/readers/ReaderHome.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
   {
@@ -60,6 +60,11 @@ const routes = [
     path: "/:pathMatch(.*)*",
     redirect: "/login",
   },
+  {
+    path: "/reader/all-books",
+    name: "reader.all-books",
+    component: () => import("@/views/readers/AllBooksView.vue"),
+  },
 ];
 
 function isTokenPresent(raw) {
@@ -71,37 +76,6 @@ const router = createRouter({
   routes,
 });
 
-// router.beforeEach((to, from, next) => {
-//   const token = localStorage.getItem(DOCGIA_TOKEN_KEY);
-
-//   console.log(
-//     "[ROUTER GUARD] to:",
-//     to.name,
-//     "requiresAuth:",
-//     !!to.meta.requiresAuth,
-//     "requiresGuest:",
-//     !!to.meta.requiresGuest,
-//     "tokenPresent:",
-//     !!token
-//   );
-
-//   const requiresAuth = !!to.meta.requiresAuth;
-//   const requiresGuest = !!to.meta.requiresGuest;
-
-//   if (requiresAuth && !token) {
-//     // eslint-disable-next-line no-console
-//     console.warn("[ROUTER GUARD] redirect -> login (no token)");
-//     return next({ name: "login" });
-//   }
-
-//   if (token && requiresGuest) {
-//     // eslint-disable-next-line no-console
-//     console.warn("[ROUTER GUARD] already logged in -> redirect to home");
-//     return next({ name: "home" });
-//   }
-
-//   return next();
-// });
 router.beforeEach((to, from, next) => {
   const raw = localStorage.getItem(DOCGIA_TOKEN_KEY);
   const tokenPresent = isTokenPresent(raw);
