@@ -152,7 +152,7 @@ const showStaffNotice = computed(() => {
 
 .yeu-cau-tra {
     background-color: #cfe2ff;
-    color: #0d6efd;
+    color: #1e40af;
 }
 
 .date-info p {
@@ -212,7 +212,7 @@ const showStaffNotice = computed(() => {
 }
 
 .total-final {
-    color: #6c5ce7;
+    color: #1e40af;
     font-size: 18px;
     font-weight: 700;
 }
@@ -223,7 +223,7 @@ const showStaffNotice = computed(() => {
     margin-top: 15px;
     border-radius: 6px;
     background-color: #cfe2ff;
-    color: #0d6efd;
+    color: #1e40af;
     font-size: 0.95em;
 }
 

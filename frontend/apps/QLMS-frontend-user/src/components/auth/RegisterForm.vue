@@ -332,7 +332,7 @@ const handleRegister = async () => {
 /* Đẹp hóa giao diện */
 .step-desc {
     text-align: center;
-    color: #10b981;
+    color: #1e40af;
     font-size: 0.95rem;
     margin: 0.5rem 0 1.8rem;
     font-weight: 500;
@@ -354,7 +354,7 @@ const handleRegister = async () => {
 }
 
 .step.active .step-line {
-    background: #10b981;
+    background: #3554ba;
 }
 
 .step-number {
@@ -371,7 +371,7 @@ const handleRegister = async () => {
 }
 
 .step.active .step-number {
-    background: #10b981;
+    background: #1e40af;
     color: white;
 }
 

@@ -142,10 +142,6 @@
     transition: color 0.2s;
 }
 
-.links-list a:hover {
-    /* color: #a855f7; */
-}
-
 .social-icons {
     display: flex;
     gap: 1rem;

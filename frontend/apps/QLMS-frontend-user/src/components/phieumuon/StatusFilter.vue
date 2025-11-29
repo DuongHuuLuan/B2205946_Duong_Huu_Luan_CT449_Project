@@ -65,9 +65,9 @@ const countMap = computed(() => {
 }
 
 .filter-btn.active {
-    background-color: #6c5ce7;
+    background-color: #1e40af;
     color: white;
-    border-color: #6c5ce7;
+    border-color: #1e40af;
     font-weight: 600;
 }
 </style>
