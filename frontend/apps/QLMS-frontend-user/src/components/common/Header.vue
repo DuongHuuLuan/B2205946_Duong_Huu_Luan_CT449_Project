@@ -1,19 +1,16 @@
 <template>
     <nav class="hv-header">
         <div class="hv-inner">
-            <!-- Logo -->
             <div class="hv-left">
                 <RouterLink to="/" class="hv-brand">Thư Viện</RouterLink>
             </div>
 
-            <!-- Burger menu (mobile) -->
             <button class="hv-burger" @click="mobileOpen = !mobileOpen" aria-label="Open menu">
                 <span class="burger-line" :class="{ open: mobileOpen }"></span>
                 <span class="burger-line" :class="{ open: mobileOpen }"></span>
                 <span class="burger-line" :class="{ open: mobileOpen }"></span>
             </button>
 
-            <!-- Menu chính (chỉ hiện khi đã đăng nhập) -->
             <div v-if="isAuthenticated" :class="['hv-center', { open: mobileOpen }]" @click="mobileOpen = false">
                 <RouterLink class="hv-link" :class="{ active: routeName === 'home' }" to="/">Trang chủ</RouterLink>
                 <RouterLink class="hv-link" :class="{ active: routeName === 'sach.list' }" to="/sach">Sách</RouterLink>
@@ -31,18 +28,14 @@
                 <RouterLink v-if="isStaff" class="hv-link" to="/admin">Quản trị</RouterLink>
             </div>
 
-            <!-- Phần bên phải: Đăng nhập / Avatar + Dropdown -->
             <div class="hv-right">
-                <!-- Chưa đăng nhập -->
                 <template v-if="!isAuthenticated">
                     <RouterLink to="/login" class="hv-ghost">Đăng nhập</RouterLink>
                     <RouterLink to="/register" class="hv-primary">Đăng ký</RouterLink>
                 </template>
 
-                <!-- Đã đăng nhập → Dropdown hiện đại -->
                 <template v-else>
                     <div class="hv-user-dropdown" ref="dropdownRef">
-                        <!-- Nút chính (click để mở dropdown) -->
                         <div class="hv-user-preview" @click="toggleDropdown">
                             <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="Avatar" class="hv-avatar-img" />
                             <div v-else class="hv-avatar">{{ userInitial }}</div>
@@ -59,7 +52,6 @@
                             </svg>
                         </div>
 
-                        <!-- Dropdown menu -->
                         <div v-if="dropdownOpen" class="hv-dropdown-menu" @click.stop>
                             <RouterLink v-if="isDocGia" :to="{ name: 'docgia.profile' }" class="hv-dropdown-item"
                                 @click="dropdownOpen = false">
@@ -90,10 +82,8 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 
-// Mobile menu
 const mobileOpen = ref(false);
 
-// Dropdown
 const dropdownOpen = ref(false);
 const dropdownRef = ref(null);
 
@@ -101,12 +91,10 @@ const toggleDropdown = () => {
     dropdownOpen.value = !dropdownOpen.value;
 };
 
-// Đóng dropdown khi click bên ngoài
 onClickOutside(dropdownRef, () => {
     dropdownOpen.value = false;
 });
 
-// Đóng khi chuyển trang
 const closeAll = () => {
     mobileOpen.value = false;
     dropdownOpen.value = false;
@@ -114,7 +102,6 @@ const closeAll = () => {
 onMounted(() => router.afterEach(closeAll));
 onBeforeUnmount(() => router.afterEach(() => { }));
 
-// Computed
 const isAuthenticated = computed(() => auth.isLoggedIn);
 const user = computed(() => auth.user || {});
 
@@ -154,7 +141,6 @@ function logout() {
 </script>
 
 <style scoped>
-/* ──────────────── DROPDOWN USER ──────────────── */
 .hv-user-dropdown {
     position: relative;
     user-select: none;
@@ -220,7 +206,6 @@ function logout() {
     transform: rotate(180deg);
 }
 
-/* Dropdown menu */
 .hv-dropdown-menu {
     position: absolute;
     top: 100%;
@@ -281,7 +266,6 @@ function logout() {
     border-top: 1px solid #e5e7eb;
 }
 
-/* Mobile */
 @media (max-width: 768px) {
     .hv-user-preview {
         gap: 8px;

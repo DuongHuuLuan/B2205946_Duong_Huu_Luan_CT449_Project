@@ -39,7 +39,7 @@
             </div>
             <div class="actions">
                 <button class="btn-primary" :disabled="saving">{{ saving ? "Đang lưu..." : "Lưu"
-                    }}</button>
+                }}</button>
                 <button type="button" class="btn-outline" @click="onReset">Huỷ</button>
             </div>
 
@@ -49,9 +49,9 @@
 </template>
 
 <script setup>
-import { reactive, watch, ref } from "vue"; // Thêm ref
+import { reactive, watch, ref } from "vue";
 import { useDocGiaStore } from "@/stores/docgiaStore";
-import Swal from 'sweetalert2'; // Import SweetAlert2
+import Swal from 'sweetalert2';
 
 const props = defineProps({ initialProfile: { type: Object, required: true } });
 const emit = defineEmits(["saved"]);
@@ -78,10 +78,8 @@ const form = reactive({
     DiaChi: props.initialProfile.DiaChi || "",
 });
 
-// Sử dụng ref cho reactivity
 const saving = ref(false);
 const error = ref(null);
-// Đã xóa const success = ref(null); vì dùng Swal
 
 watch(
     () => props.initialProfile,
@@ -92,7 +90,7 @@ watch(
         form.Phai = np?.Phai || "";
         form.DienThoai = np?.DienThoai || "";
         form.DiaChi = np?.DiaChi || "";
-        error.value = null; // Cập nhật ref
+        error.value = null;
     },
     { immediate: true, deep: true }
 );
@@ -104,7 +102,7 @@ function onReset() {
     form.Phai = props.initialProfile.Phai || "";
     form.DienThoai = props.initialProfile.DienThoai || "";
     form.DiaChi = props.initialProfile.DiaChi || "";
-    error.value = null; // Cập nhật ref
+    error.value = null;
 }
 
 async function onSubmit() {
@@ -264,7 +262,6 @@ async function onSubmit() {
     font-size: 14px;
 }
 
-/* Đã loại bỏ .form-success */
 
 @media (max-width: 720px) {
     .form-grid {

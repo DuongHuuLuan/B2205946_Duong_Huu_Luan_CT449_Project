@@ -1,5 +1,3 @@
-// File: src/services/theodoimuonsach.service.js (hoặc tương tự)
-
 import api from "./api.service";
 
 class TheoDoiMuonSachService {

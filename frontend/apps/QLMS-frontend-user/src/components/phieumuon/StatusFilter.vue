@@ -32,7 +32,6 @@ const statusOptions = [
     { label: 'Đã trả', value: 'Đã trả' },
 ];
 
-// Tính toán số lượng cho từng trạng thái
 const countMap = computed(() => {
     const map = { all: props.borrows.length };
     statusOptions.filter(s => s.value !== 'all').forEach(status => {

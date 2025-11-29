@@ -27,7 +27,6 @@ const props = defineProps({
 const emits = defineEmits(["update:modelValue", "search"]);
 const keyword = ref(props.modelValue);
 
-// debounce helper
 function debounce(fn, delay = 300) {
     let t = null;
     const wrapped = (...args) => {

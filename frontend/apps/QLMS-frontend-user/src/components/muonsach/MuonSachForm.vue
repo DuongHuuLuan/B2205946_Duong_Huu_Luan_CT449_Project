@@ -79,37 +79,30 @@ watch(ngayMuon, (newNgayMuon) => {
     }
 });
 
-// THÊM: Tính toán giá trị số (numeric) để gửi lên Backend một cách an toàn
 const totalCostNumeric = computed(() => {
-    // Sử dụng DonGia hoặc GiaSach từ sách làm tiền cọc
     const pricePerBook = bookDetail.value?.DonGia || bookDetail.value?.GiaSach || 5000;
     const numericPrice = Number(pricePerBook);
     if (!bookDetail.value) return 0;
     return numericPrice * quantity.value;
 });
 
-// Giữ lại hàm format để hiển thị cho người dùng
 const totalCostFormatted = computed(() => {
     return totalCostNumeric.value.toLocaleString('vi-VN');
 });
 
 
-// Load chi tiết sách
 onMounted(async () => {
     try {
         const id = route.params.id;
         if (!id) throw new Error("Không có ID sách");
         const bookData = await SachService.getById(id);
 
-        // Cần đảm bảo rằng bookData có trường 'SoQuyenCon' hoặc 'SoQuyen'
-        // Tôi sử dụng bookDetail.SoQuyen theo template gốc của bạn
         if (!bookData || bookData.SoQuyen === undefined) {
             console.warn("Dữ liệu sách thiếu trường SoQuyen!");
         }
 
         bookDetail.value = bookData;
 
-        // Điều chỉnh số lượng mượn sau khi có dữ liệu sách
         if (bookData && bookData.SoQuyen < quantity.value) {
             quantity.value = bookData.SoQuyen > 0 ? 1 : 0;
         }
@@ -122,7 +115,6 @@ onMounted(async () => {
     }
 });
 
-// Hàm xác nhận mượn sách
 async function confirmBorrow() {
     isSubmitting.value = true;
     try {
@@ -131,7 +123,6 @@ async function confirmBorrow() {
             return;
         }
 
-        // Validation ngày tháng
         if (moment(hanTra.value).isBefore(moment(ngayMuon.value))) {
             Swal.fire('Lỗi', 'Hạn trả không thể trước ngày mượn.', 'warning');
             return;
@@ -148,7 +139,6 @@ async function confirmBorrow() {
             NgayMuon: ngayMuon.value,
             HanTra: hanTra.value,
 
-            // SỬA LỖI & NHẤT QUÁN: Gửi giá trị số an toàn và sử dụng tên trường TONGTIEN
             TongTien: totalCostNumeric.value,
         };
 
@@ -161,7 +151,6 @@ async function confirmBorrow() {
             confirmButtonText: 'Đóng'
         });
 
-        // Chuyển hướng về trang danh sách sách
         router.push("/sach");
 
     } catch (error) {
@@ -176,7 +165,6 @@ async function confirmBorrow() {
 ---
 
 <style scoped>
-/* CSS giữ nguyên, đảm bảo tính thẩm mỹ */
 .checkout-container {
     padding: 24px;
     max-width: 600px;

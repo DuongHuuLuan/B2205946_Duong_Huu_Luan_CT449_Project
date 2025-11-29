@@ -1,13 +1,11 @@
 <template>
     <div class="detail-page">
-        <!-- Nút quay lại -->
         <div class="back-link">
             <button @click="goBack" class="back-btn">
                 ← Quay lại
             </button>
         </div>
 
-        <!-- Card chi tiết sách -->
         <div class="detail-card" v-if="book">
             <div class="book-cover-large">
                 <img :src="book.BiaSach || fallbackCover" :alt="book.TenSach" class="cover-img" />
@@ -34,7 +32,6 @@
                     </div>
                 </div>
 
-                <!-- Nút mượn sách -->
                 <button class="borrow-btn" :disabled="stock === 0" @click="borrowBook">
                     <span v-if="stock > 0">Yêu cầu mượn sách</span>
                     <span v-else>Hết sách</span>
@@ -42,7 +39,6 @@
             </div>
         </div>
 
-        <!-- Loading hoặc không tìm thấy -->
         <div v-else class="empty-state">
             <p>Đang tải chi tiết sách...</p>
         </div>
@@ -63,7 +59,7 @@ const fallbackCover = "https://via.placeholder.com/300x450.png?text=No+Cover";
 
 onMounted(async () => {
     const id = route.params.id;
-    await bookStore.fetchAvailableBooks(); // đảm bảo dữ liệu đã có
+    await bookStore.fetchAvailableBooks();
     book.value = bookStore.books.find(b => b._id === id || b.MaSach === id);
 });
 
@@ -83,7 +79,6 @@ function goBack() {
 async function borrowBook() {
     if (stock.value === 0) return;
 
-    // Điều hướng đến trang checkout hoặc gọi API mượn sách
     router.push({
         name: 'reader.checkout-book',
         params: { id: book.value._id }
@@ -245,7 +240,6 @@ async function borrowBook() {
     font-size: 1.1rem;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .detail-card {
         grid-template-columns: 1fr;

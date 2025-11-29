@@ -45,7 +45,6 @@
 
 
 <script setup>
-// Footer tĩnh, không cần logic
 </script>
 
 <style scoped>
@@ -61,7 +60,6 @@
     padding: 0 1.5rem;
 }
 
-/* Phần trên */
 .footer-top {
     padding: 3rem 0 2rem;
 }
@@ -73,7 +71,6 @@
     gap: 4rem;
 }
 
-/* Logo + Tagline */
 .footer-left {
     flex: 1;
 }
@@ -96,7 +93,6 @@
     justify-content: center;
     font-weight: 900;
     font-size: 1.4rem;
-    /* box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); */
 }
 
 .site-name {
@@ -112,7 +108,6 @@
     line-height: 1.5;
 }
 
-/* Liên kết + Icon */
 .footer-right {
     display: flex;
     align-items: flex-start;
@@ -158,7 +153,6 @@
     transform: translateY(-3px);
 }
 
-/* Dòng copyright */
 .footer-bottom {
     border-top: 1px solid #1e293b;
     padding: 1.5rem 0;
@@ -171,7 +165,6 @@
     color: #64748b;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .footer-content {
         flex-direction: column;

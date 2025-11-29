@@ -1,4 +1,3 @@
-<!-- src/components/books/BookCard.vue -->
 <template>
     <div class="v-card" @click="$emit('view')">
         <div class="v-cover-wrapper">
@@ -16,8 +15,8 @@
 <script setup>
 defineProps({ book: Object });
 defineEmits(['view']);
-function truncate(str, n) { /* ... same as above */ }
-function formatPrice(p) { /* ... same */ }
+function truncate(str, n) { }
+function formatPrice(p) { }
 </script>
 
 <style scoped>

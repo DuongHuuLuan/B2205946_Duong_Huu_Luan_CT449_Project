@@ -42,7 +42,6 @@ const routes = [
     component: () => import("@/views/muonsach/MuonSachAdd.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
-  // --- đảm bảo có route cho /reader/borrowed ---
   {
     path: "/reader/borrowed",
     name: "borrowed.list",
@@ -55,7 +54,6 @@ const routes = [
     component: () => import("@/views/docgia/ProfileView.vue"),
     meta: { requiresAuth: true, role: "docgia" },
   },
-  // fallback
   {
     path: "/:pathMatch(.*)*",
     redirect: "/login",
@@ -90,7 +88,6 @@ router.beforeEach((to, from, next) => {
   );
 
   if (to.meta.requiresAuth && !tokenPresent) {
-    // đảm bảo xóa token rác nếu có
     localStorage.removeItem(DOCGIA_TOKEN_KEY);
     return next({ name: "login" });
   }

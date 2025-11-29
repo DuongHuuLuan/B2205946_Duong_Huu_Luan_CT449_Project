@@ -24,17 +24,13 @@ function unwrap(res) {
   return res;
 }
 
-// Hàm chuẩn hóa avatar path → luôn trả về "/uploads/..."
 function normalizeAvatarPath(path) {
   if (!path) return null;
 
-  // Chuẩn hóa mọi kiểu \ hoặc / thành /
   let normalized = path.replace(/\\/g, "/").trim();
 
-  // Loại bỏ các // liên tiếp
   normalized = normalized.replace(/\/+/g, "/");
 
-  // Đảm bảo bắt đầu bằng /uploads/
   if (!normalized.toLowerCase().startsWith("/uploads/")) {
     if (normalized.toLowerCase().startsWith("uploads/")) {
       normalized = "/" + normalized;
@@ -43,7 +39,7 @@ function normalizeAvatarPath(path) {
     }
   }
 
-  return normalized; // → "/uploads/docgia/xxx.jpg"
+  return normalized;
 }
 
 export const useDocGiaStore = defineStore("docgia", {
@@ -68,7 +64,6 @@ export const useDocGiaStore = defineStore("docgia", {
       const holot = state.profile.HoLot || "";
       return (ten[0] || holot[0] || "D").toUpperCase();
     },
-    // Getter mới: luôn trả về đường dẫn chuẩn để component dùng
     avatarUrl: (state) => normalizeAvatarPath(state.profile?.Avatar),
   },
 
@@ -94,7 +89,6 @@ export const useDocGiaStore = defineStore("docgia", {
         return;
       }
 
-      // Chuẩn hóa Avatar trước khi lưu
       const normalized = {
         ...user,
         Avatar: normalizeAvatarPath(user.Avatar || user.avatar),
@@ -156,7 +150,6 @@ export const useDocGiaStore = defineStore("docgia", {
       }
     },
 
-    // ĐÃ SỬA HOÀN CHỈNH – UPLOAD AVATAR + CHUẨN HÓA ĐƯỜNG DẪN
     async uploadAvatar(file) {
       if (!file) throw new Error("No file provided");
 
@@ -170,21 +163,17 @@ export const useDocGiaStore = defineStore("docgia", {
         const res = await DocGiaService.uploadAvatar(fd);
         const result = unwrap(res);
 
-        // Lấy avatar mới từ response (có thể nằm nhiều chỗ)
         let newAvatarPath =
           result?.Avatar ?? result?.avatar ?? result?.data?.Avatar;
 
-        // Nếu backend không trả về path → fetch lại profile
         if (!newAvatarPath) {
           console.warn("Backend không trả về Avatar → fetch lại profile");
           await this.fetchProfile();
           return this.avatarUrl;
         }
 
-        // Chuẩn hóa về dạng "/uploads/..."
         newAvatarPath = normalizeAvatarPath(newAvatarPath);
 
-        // Cập nhật store ngay lập tức
         this.setProfile({
           ...(this.profile || {}),
           Avatar: newAvatarPath,
@@ -194,7 +183,6 @@ export const useDocGiaStore = defineStore("docgia", {
       } catch (err) {
         this.error =
           err?.response?.data?.message ?? err?.message ?? "Upload ảnh thất bại";
-        // Vẫn cố fetch lại để đồng bộ
         await this.fetchProfile();
         throw err;
       } finally {

@@ -89,7 +89,6 @@ export function createApiClient(prefix = "") {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Nếu upload FormData thì để axios tự set Content-Type
         if (config.data instanceof FormData) {
           delete config.headers["Content-Type"];
           delete config.headers["content-type"];

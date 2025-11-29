@@ -21,15 +21,12 @@
     transition: all 0.4s ease;
 }
 
-/* ========== TRANG ĐĂNG KÝ: TỰ ĐỘNG RỘNG + CAO HƠN ========== */
 .register-page .auth-container {
     max-width: 1340px !important;
     height: 900px !important;
     grid-template-columns: 1fr 1.15fr !important;
-    /* Form rộng hơn */
 }
 
-/* Bên trái */
 .auth-left {
     background: url('https://inuvdp.com/wp-content/uploads/2024/04/background-ke-sach-4.jpg') center/cover no-repeat;
     color: white;
@@ -72,7 +69,6 @@
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-/* Bên phải */
 .auth-right {
     background: white;
     padding: 4rem 3.5rem;
@@ -98,7 +94,6 @@
     font-size: 1.05rem;
 }
 
-/* Input */
 .auth-form .form-control {
     height: 58px;
     border-radius: 16px;
@@ -151,7 +146,6 @@
     text-decoration: underline;
 }
 
-/* Progress Bar & Nút đôi */
 .register-steps {
     display: flex;
     align-items: center;
@@ -217,7 +211,6 @@
     flex: 2;
 }
 
-/* Responsive */
 @media (max-width: 992px) {
 
     .auth-container,

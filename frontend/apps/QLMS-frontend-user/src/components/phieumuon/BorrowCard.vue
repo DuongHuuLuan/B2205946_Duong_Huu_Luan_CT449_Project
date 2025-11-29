@@ -100,7 +100,6 @@ const showStaffNotice = computed(() => {
 </script>
 
 <style scoped>
-/* giữ style cũ + bổ sung .staff-note, .fine */
 .borrow-card {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
