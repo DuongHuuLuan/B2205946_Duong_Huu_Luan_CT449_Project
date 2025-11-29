@@ -304,7 +304,7 @@ exports.updateProfile = async (req, res, next) => {
       const { Password, MatKhau, password, matkhau, ...userWithoutPassword } =
         existingDoc;
       return res.status(200).send({
-        message: "Cập nhật thành công (Không có thay đổi dữ liệu).",
+        message: "Cập nhật thành công.",
         profile: userWithoutPassword,
       });
     } // XỬ LÝ THÀNH CÔNG VÀ CÓ THAY ĐỔI

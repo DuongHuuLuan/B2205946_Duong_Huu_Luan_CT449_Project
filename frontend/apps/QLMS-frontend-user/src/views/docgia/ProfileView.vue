@@ -1,7 +1,9 @@
 <template>
     <div class="profile-page">
-        <ProfileCard :profile="store.profile" @avatar-uploaded="handleAvatarUpload" @edit="openChangePassword" />
-        <ProfileForm :initialProfile="store.profile" @saved="onProfileSaved" />
+        <div class="profile-container">
+            <ProfileCard :profile="store.profile" @avatar-uploaded="handleAvatarUpload" @edit="openChangePassword" />
+            <ProfileForm :initialProfile="store.profile" @saved="onProfileSaved" />
+        </div>
     </div>
 </template>
 
@@ -51,7 +53,6 @@ export default {
             }
         }
 
-        // Logic onProfileSaved chỉ tập trung vào đồng bộ dữ liệu
         function onProfileSaved(updatedProfile) {
             console.log("Profile saved! New data:", updatedProfile);
             if (updatedProfile && Object.keys(updatedProfile).length > 0) {
@@ -73,13 +74,16 @@ export default {
 <style scoped>
 .profile-page {
     min-height: 100vh;
-    margin: 0 auto;
-    padding: 20px;
+    padding: 20px 0;
     background-color: #FFF2D7;
-    max-width: 800px;
 }
 
-.profile-card+.profile-form {
-    margin-top: 24px;
+
+.profile-container {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
 }
 </style>

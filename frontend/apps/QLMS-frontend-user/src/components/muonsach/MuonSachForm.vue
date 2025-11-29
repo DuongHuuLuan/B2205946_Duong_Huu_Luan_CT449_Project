@@ -279,7 +279,7 @@ async function confirmBorrow() {
 
 .total-amount {
     font-size: 24px;
-    color: #4f46e5;
+    color: #1e40af;
     font-weight: 800;
 }
 
@@ -293,7 +293,7 @@ async function confirmBorrow() {
     font-size: 16px;
     font-weight: 500;
     color: #fff;
-    background-color: #4f46e5;
+    background-color: #1e293b;
     cursor: pointer;
     transition: background-color 0.15s ease-in-out;
 }
