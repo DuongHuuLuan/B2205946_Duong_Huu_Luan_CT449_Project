@@ -29,7 +29,6 @@ app.use(
     setHeaders: (res, filepath) => {
       const mimeType = mime.lookup(filepath) || "application/octet-stream";
       res.setHeader("Content-Type", mimeType);
-      // Bonus: cache lâu hơn
       res.setHeader("Cache-Control", "public, max-age=31536000");
     },
   })

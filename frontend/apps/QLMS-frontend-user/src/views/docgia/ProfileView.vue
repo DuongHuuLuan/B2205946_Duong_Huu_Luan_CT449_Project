@@ -1,10 +1,7 @@
 <template>
-        <div class="profile-page">
-               
+    <div class="profile-page">
         <ProfileCard :profile="store.profile" @avatar-uploaded="handleAvatarUpload" @edit="openChangePassword" />
-               
         <ProfileForm :initialProfile="store.profile" @saved="onProfileSaved" />
-           
     </div>
 </template>
 
@@ -13,7 +10,7 @@ import { ref, onMounted } from "vue";
 import { useDocGiaStore } from "@/stores/docgiaStore";
 import ProfileCard from "@/components/docgia/ProfileCard.vue";
 import ProfileForm from "@/components/docgia/ProfileForm.vue";
-import Swal from 'sweetalert2'; // Import SweetAlert2
+import Swal from 'sweetalert2';
 
 export default {
     components: { ProfileCard, ProfileForm },
@@ -28,7 +25,6 @@ export default {
             }
         });
 
-        // Sử dụng Swal để thông báo kết quả upload avatar
         async function handleAvatarUpload(file) {
             try {
                 await store.uploadAvatar(file);

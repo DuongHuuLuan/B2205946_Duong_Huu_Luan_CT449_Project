@@ -1,6 +1,5 @@
 <template>
     <div class="home-wrapper">
-        <!-- HERO SECTION: Background thư viện + Chào mừng + Tìm kiếm -->
         <section class="hero-section">
             <div class="hero-overlay"></div>
             <div class="hero-content">
@@ -12,9 +11,8 @@
                     Đắm mình vào thế giới sách, từ những câu chuyện cổ điển đến tri thức hiện đại, mọi lúc mọi nơi.
                 </p>
 
-                <!-- Ô tìm kiếm -->
                 <div class="search-box">
-                    <input type="text" placeholder="Tìm kiếm sách, tác giả,..." class="search-input"
+                    <input type="text" placeholder="Tìm kiếm sách, tác giả, ISBN..." class="search-input"
                         v-model="searchQuery" @keyup.enter="performSearch" />
                     <button class="search-btn" @click="performSearch">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -26,17 +24,15 @@
             </div>
         </section>
 
-        <!-- PHẦN SÁCH NỔI BẬT TRONG TUẦN -->
         <section class="featured-section">
             <div class="container">
                 <h2 class="section-title">Sách Nổi Bật Trong Tuần</h2>
                 <div class="underline"></div>
 
-                <div class="book-carousel" v-if="featuredBooks.length > 0">
+                <div class="book-carousel" v-if="featuredBooks.length">
                     <BookCardHorizontal v-for="book in featuredBooks" :key="book._id" :book="book"
                         @click="goToDetail(book)" />
                 </div>
-
                 <div v-else class="empty-state">
                     <p>Đang tải sách nổi bật...</p>
                 </div>
@@ -49,33 +45,25 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useBookStore } from "@/stores/bookStore";
-import { useAuthStore } from "@/stores/authStore";
+import { useDocGiaStore } from "@/stores/docgiaStore";
 import BookCardHorizontal from "@/components/readers/BookCardHorizontal.vue";
 
 const router = useRouter();
 const bookStore = useBookStore();
-const authStore = useAuthStore();
+const docgiaStore = useDocGiaStore();
 
 const searchQuery = ref("");
 const featuredBooks = ref([]);
 
-// Lấy tên độc giả: HoLot + Ten
 const fullName = computed(() => {
-    const user = authStore.user;
-    if (!user) return "Độc Giả";
-
-    const hoLot = (user.HoLot || "").trim();
-    const ten = (user.Ten || "").trim();
-
-    if (hoLot && ten) return `${hoLot} ${ten}`;
-    if (hoLot) return hoLot;
-    if (ten) return ten;
-    return "Độc Giả";
+    if (!docgiaStore.profile) return "Độc Giả";
+    const hoLot = (docgiaStore.profile.HoLot || "").trim();
+    const ten = (docgiaStore.profile.Ten || "").trim();
+    return hoLot && ten ? `${hoLot} ${ten}` : hoLot || ten || "Độc Giả";
 });
 
 onMounted(async () => {
     await bookStore.fetchAvailableBooks();
-    // Hiển thị 10 cuốn đầu làm sách nổi bật
     featuredBooks.value = bookStore.books.slice(0, 10);
 });
 
@@ -83,26 +71,27 @@ function goToDetail(book) {
     router.push(`/reader/books/${book._id}`);
 }
 
+
 function performSearch() {
-    const query = searchQuery.value.trim();
-    if (query) {
-        router.push({
-            name: "reader.all-books",
-            query: { q: query }
-        });
-    }
+    const q = searchQuery.value.trim();
+    if (!q) return;
+
+    router.push({
+        name: "reader.all-books",
+        query: { q }
+    });
+
+    searchQuery.value = "";
 }
 </script>
 
 <style scoped>
-/* Căn bản */
 .home-wrapper {
     min-height: 100vh;
     background: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* HERO SECTION */
 .hero-section {
     position: relative;
     height: 90vh;
@@ -133,7 +122,6 @@ function performSearch() {
     font-weight: 900;
     margin: 0 0 1rem 0;
     line-height: 1.1;
-    /* text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7); */
 }
 
 .user-name {
@@ -154,7 +142,6 @@ function performSearch() {
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
 }
 
-/* Ô tìm kiếm */
 .search-box {
     max-width: 720px;
     margin: 0 auto;
@@ -198,7 +185,6 @@ function performSearch() {
     height: 28px;
 }
 
-/* PHẦN SÁCH NỔI BẬT */
 .featured-section {
     padding: 6rem 0;
     background: #ffffff;
@@ -226,34 +212,12 @@ function performSearch() {
     border-radius: 4px;
 }
 
-/* Carousel + thanh trượt đẹp */
 .book-carousel {
     display: flex;
     gap: 2rem;
     overflow-x: auto;
     padding: 2rem 0 4rem;
     scrollbar-width: thin;
-    scrollbar-color: #94a3b8 #f8fafc;
-}
-
-.book-carousel::-webkit-scrollbar {
-    height: 10px;
-}
-
-.book-carousel::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
-    margin: 0 100px;
-}
-
-.book-carousel::-webkit-scrollbar-thumb {
-    background: #94a3b8;
-    border-radius: 10px;
-    border: 2px solid #f1f5f9;
-}
-
-.book-carousel::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
 }
 
 .empty-state {
@@ -263,7 +227,6 @@ function performSearch() {
     font-size: 1.3rem;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .hero-title {
         font-size: 2.6rem;
@@ -271,29 +234,6 @@ function performSearch() {
 
     .user-name {
         font-size: 2.8rem;
-    }
-
-    .hero-subtitle {
-        font-size: 1.1rem;
-    }
-
-    .search-input {
-        padding: 1.1rem 1.8rem;
-        font-size: 1.1rem;
-    }
-
-    .search-btn {
-        width: 56px;
-        height: 56px;
-    }
-
-    .search-btn svg {
-        width: 24px;
-        height: 24px;
-    }
-
-    .section-title {
-        font-size: 2rem;
     }
 }
 </style>

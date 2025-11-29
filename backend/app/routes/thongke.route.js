@@ -12,8 +12,8 @@ const STATS_ROLES = ["Admin", "QuanLy"];
 // 1. Thống kê chung (Tổng quan)
 router.get(
   "/general",
-  verifyToken,
-  authorizeRole(STATS_ROLES),
+  // verifyToken,
+  // authorizeRole(STATS_ROLES),
   thongke.getGeneralStats
 );
 
@@ -32,7 +32,7 @@ router.get(
   authorizeRole(STATS_ROLES),
   thongke.getStaffByRole
 );
-// thốn kê theo top- sách mượn
+// thống kê theo top- sách mượn
 router.get(
   "/top-borrowed",
   verifyToken,

@@ -13,21 +13,21 @@
                 <span class="burger-line" :class="{ open: mobileOpen }"></span>
             </button>
 
-            <div :class="['hv-center', { open: mobileOpen }]" @click="mobileOpen = false">
+            <div v-if="isAuthenticated" :class="['hv-center', { open: mobileOpen }]" @click="mobileOpen = false">
                 <RouterLink class="hv-link" :class="{ active: routeName === 'home' }" to="/">Trang chủ</RouterLink>
                 <RouterLink class="hv-link" :class="{ active: routeName === 'sach.list' }" to="/sach">Sách</RouterLink>
 
-                <RouterLink v-if="isAuthenticated && isDocGia" class="hv-link"
-                    :class="{ active: routeName === 'docgia.profile' }" :to="{ name: 'docgia.profile' }">
+                <RouterLink v-if="isDocGia" class="hv-link" :class="{ active: routeName === 'docgia.profile' }"
+                    :to="{ name: 'docgia.profile' }">
                     Hồ sơ của tôi
                 </RouterLink>
 
-                <RouterLink v-if="isAuthenticated && isDocGia" class="hv-link"
-                    :class="{ active: routeName === 'borrowed.list' }" to="/reader/borrowed">
+                <RouterLink v-if="isDocGia" class="hv-link" :class="{ active: routeName === 'borrowed.list' }"
+                    to="/reader/borrowed">
                     Phiếu Mượn
                 </RouterLink>
 
-                <RouterLink v-if="isAuthenticated && isStaff" class="hv-link" to="/admin">Quản trị</RouterLink>
+                <RouterLink v-if="isStaff" class="hv-link" to="/admin">Quản trị</RouterLink>
             </div>
 
             <div class="hv-right">

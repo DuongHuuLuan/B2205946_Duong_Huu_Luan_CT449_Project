@@ -2,7 +2,8 @@
 
 import createApiClient from "./api.service";
 
-const baseURL = "/api/thongke"; // Khớp với tiền tố route backend
+const baseURL = "/api/thongke";
+// const baseURL = "http://localhost:3000/api/thongke";
 
 class ThongKeService {
   constructor() {

@@ -2,7 +2,6 @@
     <footer class="app-footer">
         <div class="footer-top">
             <div class="container footer-content">
-                <!-- Cột trái: Logo + Tagline -->
                 <div class="footer-left">
                     <div class="footer-logo">
                         <div class="tv-badge">TV</div>
@@ -11,25 +10,24 @@
                     <p class="tagline">Nơi tri thức được chia sẻ và lan tỏa</p>
                 </div>
 
-                <!-- Cột phải: Liên kết + Icon MXH -->
                 <div class="footer-right">
                     <div class="quick-links">
                         <h4 class="links-title">Liên kết nhanh</h4>
                         <ul class="links-list">
-                            <li><a href="#">Trang chủ</a></li>
-                            <li><a href="#">Tất cả sách</a></li>
-                            <li><a href="#">Theo dõi chúng tôi</a></li>
+                            <li><router-link to="/">Trang chủ</router-link></li>
+                            <li><router-link to="/sach">Tất cả sách</router-link></li>
                         </ul>
                     </div>
 
                     <div class="social-icons">
-                        <a href="#" aria-label="Facebook">
+                        <a href="https://facebook.com/yourpage" aria-label="Facebook" target="_blank" rel="noopener">
                             <i class="fab fa-facebook-f"></i>
                         </a>
-                        <a href="#" aria-label="Twitter">
+                        <a href="https://twitter.com/yourprofile" aria-label="Twitter" target="_blank" rel="noopener">
                             <i class="fab fa-twitter"></i>
                         </a>
-                        <a href="#" aria-label="Instagram">
+                        <a href="https://instagram.com/yourprofile" aria-label="Instagram" target="_blank"
+                            rel="noopener">
                             <i class="fab fa-instagram"></i>
                         </a>
                     </div>
@@ -37,7 +35,6 @@
             </div>
         </div>
 
-        <!-- Dòng copyright -->
         <div class="footer-bottom">
             <div class="container">
                 <p>© 2025 Thư Viện. Tất cả quyền được bảo lưu.</p>
@@ -45,6 +42,7 @@
         </div>
     </footer>
 </template>
+
 
 <script setup>
 // Footer tĩnh, không cần logic

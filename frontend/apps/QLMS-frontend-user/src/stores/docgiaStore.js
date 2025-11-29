@@ -1,3 +1,261 @@
+// import { defineStore } from "pinia";
+// import DocGiaService from "@/services/docgia.service";
+
+// const DOCGIA_USER_KEY = "docgiaUser";
+// const DOCGIA_TOKEN_KEY = "docgiaToken";
+
+// function safeParse(json) {
+//   try {
+//     return json ? JSON.parse(json) : null;
+//   } catch {
+//     return null;
+//   }
+// }
+
+// function unwrap(res) {
+//   if (res == null) return null;
+
+//   if (res.data && typeof res.data === "object") {
+//     return res.data;
+//   }
+
+//   if (res.updated) return res.updated;
+//   if (res.profile) return res.profile;
+//   if (res.user) return res.user;
+//   if (res.payload) return res.payload;
+//   if (res.result) return res.result;
+
+//   if (typeof res === "object") return res;
+
+//   return res;
+// }
+
+// function normalizeStats(raw = {}) {
+//   if (!raw || typeof raw !== "object")
+//     return { currentBorrowed: 0, totalBorrowed: 0, overdueCount: 0 };
+
+//   const pickNumber = (...keys) => {
+//     for (const k of keys) {
+//       if (raw[k] !== undefined && raw[k] !== null) {
+//         const n = Number(raw[k]);
+//         if (Number.isFinite(n)) return n;
+//       }
+//     }
+//     return 0;
+//   };
+
+//   const currentBorrowed = pickNumber(
+//     "currentBorrowed",
+//     "dangMuon",
+//     "dang_muon",
+//     "dangMuonCount",
+//     "dangMuonQty"
+//   );
+//   const totalBorrowed = pickNumber(
+//     "totalBorrowed",
+//     "tongMuon",
+//     "tong_sach_da_muon",
+//     "total",
+//     "tongSach"
+//   );
+//   const overdueCount = pickNumber(
+//     "overdueCount",
+//     "quaHan",
+//     "qua_han",
+//     "treHan",
+//     "treHanCount",
+//     "overdue"
+//   );
+
+//   return { currentBorrowed, totalBorrowed, overdueCount };
+// }
+
+// export const useDocGiaStore = defineStore("docgia", {
+//   state: () => ({
+//     profile: safeParse(localStorage.getItem(DOCGIA_USER_KEY)) || null,
+//     token: localStorage.getItem(DOCGIA_TOKEN_KEY) || null,
+//     stats: null,
+//     loading: false,
+//     error: null,
+//   }),
+
+//   getters: {
+//     isLoggedIn: (state) => !!state.token,
+//     displayName: (state) =>
+//       state.profile
+//         ? `${state.profile.HoLot ?? ""} ${state.profile.Ten ?? ""}`.trim() ||
+//           "—"
+//         : "—",
+//     initials: (state) => {
+//       if (!state.profile) return "DG";
+//       const ten = state.profile.Ten || "";
+//       const holot = state.profile.HoLot || "";
+//       return (ten[0] || holot[0] || "D").toUpperCase();
+//     },
+//   },
+
+//   actions: {
+//     init() {
+//       this.profile = safeParse(localStorage.getItem(DOCGIA_USER_KEY)) || null;
+//       this.token = localStorage.getItem(DOCGIA_TOKEN_KEY) || null;
+//     },
+//     setToken(token) {
+//       this.token = token;
+//       if (token) {
+//         localStorage.setItem(DOCGIA_TOKEN_KEY, token);
+//       } else {
+//         localStorage.removeItem(DOCGIA_TOKEN_KEY);
+//       }
+//     },
+
+//     setProfile(user) {
+//       this.profile = user ? { ...user } : null;
+//       if (user) {
+//         try {
+//           localStorage.setItem(DOCGIA_USER_KEY, JSON.stringify(this.profile));
+//         } catch (e) {
+//           console.warn("Failed to persist profile to localStorage", e);
+//         }
+//       } else {
+//         localStorage.removeItem(DOCGIA_USER_KEY);
+//       }
+//     },
+
+//     _normalizeProfilePayload(payload) {
+//       const p = { ...payload };
+//       if (p.NgaySinh && typeof p.NgaySinh === "string") {
+//         const d = new Date(p.NgaySinh);
+//         if (!isNaN(d.getTime())) p.NgaySinh = d;
+//       }
+
+//       delete p.Password;
+//       delete p.MaDocGia;
+//       return p;
+//     },
+
+//     async fetchProfile() {
+//       this.loading = true;
+//       this.error = null;
+//       try {
+//         const res = await DocGiaService.getProfile();
+//         const maybe = res ?? {};
+//         const profile = maybe.profile ?? maybe.user ?? maybe;
+//         if (profile) {
+//           this.setProfile(profile);
+//         }
+//         return this.profile;
+//       } catch (err) {
+//         this.error =
+//           err?.response?.data?.message ?? err?.message ?? "Lỗi khi lấy profile";
+//         throw err;
+//       } finally {
+//         this.loading = false;
+//       }
+//     },
+
+//     async updateProfile(payload) {
+//       this.loading = true;
+//       this.error = null;
+//       try {
+//         const body = { ...payload };
+//         delete body.MaDocGia;
+
+//         const res = await DocGiaService.updateProfile(body); // 1. TRÍCH XUẤT DỮ LIỆU JSON
+
+//         const data = res.data; // 2. TÌM KIẾM OBJECT PROFILE ĐÃ CẬP NHẬT TRONG PHẢN HỒI (data)
+
+//         const maybe = data ?? {};
+//         const updatedProfile = // Sử dụng tên biến rõ ràng hơn
+//           maybe.profile ?? maybe.updated ?? maybe.user ?? maybe.value ?? maybe; // 3. CẬP NHẬT STATE VÀ TRẢ VỀ
+
+//         if (updatedProfile && typeof updatedProfile === "object") {
+//           // DÒNG QUAN TRỌNG NHẤT: Cập nhật state Pinia ngay lập tức
+//           this.setProfile(updatedProfile);
+
+//           // Trả về toàn bộ data (bao gồm message và profile)
+//           return data;
+//         }
+
+//         console.warn(
+//           "Update profile successful but missing profile object, fetching again..."
+//         );
+//         await this.fetchProfile();
+//         return data;
+//       } catch (err) {
+//         this.error =
+//           err?.response?.data?.message ?? err?.message ?? "Cập nhật thất bại";
+//         throw err;
+//       } finally {
+//         this.loading = false;
+//       }
+//     },
+
+//     async uploadAvatar(file) {
+//       if (!file) throw new Error("No file provided");
+//       const fd = new FormData();
+//       fd.append("Avatar", file);
+//       this.loading = true;
+//       this.error = null;
+//       try {
+//         // Giả sử DocGiaService.uploadAvatar gọi PUT /profile/update
+//         const res = await DocGiaService.uploadAvatar(fd);
+//         const maybe = unwrap(res);
+//         const updatedProfile =
+//           maybe?.data ?? maybe?.profile ?? maybe?.user ?? maybe; // 🚨 NẾU BACKEND TRẢ VỀ TOÀN BỘ PROFILE ĐÃ CẬP NHẬT
+
+//         if (
+//           updatedProfile &&
+//           (updatedProfile?.Avatar || updatedProfile?.avatar)
+//         ) {
+//           // Lấy đường dẫn avatar mới
+//           const avatar = updatedProfile.Avatar || updatedProfile.avatar;
+//           // Cập nhật Profile trong Store, sử dụng tên trường 'Avatar'
+//           this.setProfile({ ...(this.profile || {}), Avatar: avatar });
+//           return avatar;
+//         } // Logic dự phòng: Nếu không lấy được URL mới, gọi fetchProfile để cập nhật lại
+
+//         await this.fetchProfile();
+//         return this.profile?.Avatar ?? null;
+//       } catch (err) {
+//         this.error =
+//           err?.response?.data?.message ?? err?.message ?? "Upload ảnh thất bại";
+//         throw err;
+//       } finally {
+//         this.loading = false;
+//       }
+//     },
+
+//     async fetchStats() {
+//       this.loading = true;
+//       this.error = null;
+//       try {
+//         const res = await DocGiaService.getBorrowStats();
+//         const maybe = unwrap(res) ?? {};
+//         const normalized = normalizeStats(maybe);
+//         this.stats = normalized;
+//         return this.stats;
+//       } catch (err) {
+//         this.stats = null;
+//         this.error = err?.response?.data?.message ?? err?.message ?? null;
+//         return null;
+//       } finally {
+//         this.loading = false;
+//       }
+//     },
+
+//     // xóa mọi thứ
+//     clear() {
+//       this.profile = null;
+//       this.token = null;
+//       this.stats = null;
+//       this.loading = false;
+//       this.error = null;
+//       localStorage.removeItem(DOCGIA_USER_KEY);
+//       localStorage.removeItem(DOCGIA_TOKEN_KEY);
+//     },
+//   },
+// });
+
 import { defineStore } from "pinia";
 import DocGiaService from "@/services/docgia.service";
 
@@ -13,61 +271,37 @@ function safeParse(json) {
 }
 
 function unwrap(res) {
-  if (res == null) return null;
-
-  if (res.data && typeof res.data === "object") {
-    return res.data;
-  }
-
+  if (!res) return null;
+  if (res.data && typeof res.data === "object") return res.data;
   if (res.updated) return res.updated;
   if (res.profile) return res.profile;
   if (res.user) return res.user;
   if (res.payload) return res.payload;
   if (res.result) return res.result;
-
   if (typeof res === "object") return res;
-
   return res;
 }
 
-function normalizeStats(raw = {}) {
-  if (!raw || typeof raw !== "object")
-    return { currentBorrowed: 0, totalBorrowed: 0, overdueCount: 0 };
+// Hàm chuẩn hóa avatar path → luôn trả về "/uploads/..."
+function normalizeAvatarPath(path) {
+  if (!path) return null;
 
-  const pickNumber = (...keys) => {
-    for (const k of keys) {
-      if (raw[k] !== undefined && raw[k] !== null) {
-        const n = Number(raw[k]);
-        if (Number.isFinite(n)) return n;
-      }
+  // Chuẩn hóa mọi kiểu \ hoặc / thành /
+  let normalized = path.replace(/\\/g, "/").trim();
+
+  // Loại bỏ các // liên tiếp
+  normalized = normalized.replace(/\/+/g, "/");
+
+  // Đảm bảo bắt đầu bằng /uploads/
+  if (!normalized.toLowerCase().startsWith("/uploads/")) {
+    if (normalized.toLowerCase().startsWith("uploads/")) {
+      normalized = "/" + normalized;
+    } else {
+      normalized = "/uploads/" + normalized.replace(/^\/+/, "");
     }
-    return 0;
-  };
+  }
 
-  const currentBorrowed = pickNumber(
-    "currentBorrowed",
-    "dangMuon",
-    "dang_muon",
-    "dangMuonCount",
-    "dangMuonQty"
-  );
-  const totalBorrowed = pickNumber(
-    "totalBorrowed",
-    "tongMuon",
-    "tong_sach_da_muon",
-    "total",
-    "tongSach"
-  );
-  const overdueCount = pickNumber(
-    "overdueCount",
-    "quaHan",
-    "qua_han",
-    "treHan",
-    "treHanCount",
-    "overdue"
-  );
-
-  return { currentBorrowed, totalBorrowed, overdueCount };
+  return normalized; // → "/uploads/docgia/xxx.jpg"
 }
 
 export const useDocGiaStore = defineStore("docgia", {
@@ -92,6 +326,8 @@ export const useDocGiaStore = defineStore("docgia", {
       const holot = state.profile.HoLot || "";
       return (ten[0] || holot[0] || "D").toUpperCase();
     },
+    // Getter mới: luôn trả về đường dẫn chuẩn để component dùng
+    avatarUrl: (state) => normalizeAvatarPath(state.profile?.Avatar),
   },
 
   actions: {
@@ -99,6 +335,7 @@ export const useDocGiaStore = defineStore("docgia", {
       this.profile = safeParse(localStorage.getItem(DOCGIA_USER_KEY)) || null;
       this.token = localStorage.getItem(DOCGIA_TOKEN_KEY) || null;
     },
+
     setToken(token) {
       this.token = token;
       if (token) {
@@ -109,28 +346,24 @@ export const useDocGiaStore = defineStore("docgia", {
     },
 
     setProfile(user) {
-      this.profile = user ? { ...user } : null;
-      if (user) {
-        try {
-          localStorage.setItem(DOCGIA_USER_KEY, JSON.stringify(this.profile));
-        } catch (e) {
-          console.warn("Failed to persist profile to localStorage", e);
-        }
-      } else {
+      if (!user) {
+        this.profile = null;
         localStorage.removeItem(DOCGIA_USER_KEY);
-      }
-    },
-
-    _normalizeProfilePayload(payload) {
-      const p = { ...payload };
-      if (p.NgaySinh && typeof p.NgaySinh === "string") {
-        const d = new Date(p.NgaySinh);
-        if (!isNaN(d.getTime())) p.NgaySinh = d;
+        return;
       }
 
-      delete p.Password;
-      delete p.MaDocGia;
-      return p;
+      // Chuẩn hóa Avatar trước khi lưu
+      const normalized = {
+        ...user,
+        Avatar: normalizeAvatarPath(user.Avatar || user.avatar),
+      };
+
+      this.profile = normalized;
+      try {
+        localStorage.setItem(DOCGIA_USER_KEY, JSON.stringify(this.profile));
+      } catch (e) {
+        console.warn("Failed to persist profile to localStorage", e);
+      }
     },
 
     async fetchProfile() {
@@ -138,11 +371,8 @@ export const useDocGiaStore = defineStore("docgia", {
       this.error = null;
       try {
         const res = await DocGiaService.getProfile();
-        const maybe = res ?? {};
-        const profile = maybe.profile ?? maybe.user ?? maybe;
-        if (profile) {
-          this.setProfile(profile);
-        }
+        const profile = unwrap(res) ?? res;
+        if (profile) this.setProfile(profile);
         return this.profile;
       } catch (err) {
         this.error =
@@ -160,24 +390,18 @@ export const useDocGiaStore = defineStore("docgia", {
         const body = { ...payload };
         delete body.MaDocGia;
 
-        const res = await DocGiaService.updateProfile(body); // 1. TRÍCH XUẤT DỮ LIỆU JSON
+        const res = await DocGiaService.updateProfile(body);
+        const data = res?.data ?? res;
+        const updatedProfile =
+          data?.profile ?? data?.updated ?? data?.user ?? data;
 
-        const data = res.data; // 2. TÌM KIẾM OBJECT PROFILE ĐÃ CẬP NHẬT TRONG PHẢN HỒI (data)
-
-        const maybe = data ?? {};
-        const updatedProfile = // Sử dụng tên biến rõ ràng hơn
-          maybe.profile ?? maybe.updated ?? maybe.user ?? maybe.value ?? maybe; // 3. CẬP NHẬT STATE VÀ TRẢ VỀ
-
-        if (updatedProfile && typeof updatedProfile === "object") {
-          // DÒNG QUAN TRỌNG NHẤT: Cập nhật state Pinia ngay lập tức
+        if (updatedProfile) {
           this.setProfile(updatedProfile);
-
-          // Trả về toàn bộ data (bao gồm message và profile)
           return data;
         }
 
         console.warn(
-          "Update profile successful but missing profile object, fetching again..."
+          "Update thành công nhưng không có profile trả về → fetch lại"
         );
         await this.fetchProfile();
         return data;
@@ -190,35 +414,46 @@ export const useDocGiaStore = defineStore("docgia", {
       }
     },
 
+    // ĐÃ SỬA HOÀN CHỈNH – UPLOAD AVATAR + CHUẨN HÓA ĐƯỜNG DẪN
     async uploadAvatar(file) {
       if (!file) throw new Error("No file provided");
+
       const fd = new FormData();
       fd.append("Avatar", file);
+
       this.loading = true;
       this.error = null;
+
       try {
-        // Giả sử DocGiaService.uploadAvatar gọi PUT /profile/update
         const res = await DocGiaService.uploadAvatar(fd);
-        const maybe = unwrap(res);
-        const updatedProfile =
-          maybe?.data ?? maybe?.profile ?? maybe?.user ?? maybe; // 🚨 NẾU BACKEND TRẢ VỀ TOÀN BỘ PROFILE ĐÃ CẬP NHẬT
+        const result = unwrap(res);
 
-        if (
-          updatedProfile &&
-          (updatedProfile?.Avatar || updatedProfile?.avatar)
-        ) {
-          // Lấy đường dẫn avatar mới
-          const avatar = updatedProfile.Avatar || updatedProfile.avatar;
-          // Cập nhật Profile trong Store, sử dụng tên trường 'Avatar'
-          this.setProfile({ ...(this.profile || {}), Avatar: avatar });
-          return avatar;
-        } // Logic dự phòng: Nếu không lấy được URL mới, gọi fetchProfile để cập nhật lại
+        // Lấy avatar mới từ response (có thể nằm nhiều chỗ)
+        let newAvatarPath =
+          result?.Avatar ?? result?.avatar ?? result?.data?.Avatar;
 
-        await this.fetchProfile();
-        return this.profile?.Avatar ?? null;
+        // Nếu backend không trả về path → fetch lại profile
+        if (!newAvatarPath) {
+          console.warn("Backend không trả về Avatar → fetch lại profile");
+          await this.fetchProfile();
+          return this.avatarUrl;
+        }
+
+        // Chuẩn hóa về dạng "/uploads/..."
+        newAvatarPath = normalizeAvatarPath(newAvatarPath);
+
+        // Cập nhật store ngay lập tức
+        this.setProfile({
+          ...(this.profile || {}),
+          Avatar: newAvatarPath,
+        });
+
+        return newAvatarPath;
       } catch (err) {
         this.error =
           err?.response?.data?.message ?? err?.message ?? "Upload ảnh thất bại";
+        // Vẫn cố fetch lại để đồng bộ
+        await this.fetchProfile();
         throw err;
       } finally {
         this.loading = false;
@@ -227,12 +462,10 @@ export const useDocGiaStore = defineStore("docgia", {
 
     async fetchStats() {
       this.loading = true;
-      this.error = null;
       try {
         const res = await DocGiaService.getBorrowStats();
-        const maybe = unwrap(res) ?? {};
-        const normalized = normalizeStats(maybe);
-        this.stats = normalized;
+        const data = unwrap(res) ?? {};
+        this.stats = normalizeStats(data);
         return this.stats;
       } catch (err) {
         this.stats = null;
@@ -243,7 +476,6 @@ export const useDocGiaStore = defineStore("docgia", {
       }
     },
 
-    // xóa mọi thứ
     clear() {
       this.profile = null;
       this.token = null;

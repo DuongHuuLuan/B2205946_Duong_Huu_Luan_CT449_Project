@@ -18,6 +18,9 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://localhost:3000/",
+        changeOrigin: true, // BẮT BUỘC PHẢI CÓ
+        rewrite: (path) => path.replace(/^\/api/, "/api"), // giữ nguyên /api
+        secure: false,
       },
       "/uploads": {
         target: "http://localhost:3000/",

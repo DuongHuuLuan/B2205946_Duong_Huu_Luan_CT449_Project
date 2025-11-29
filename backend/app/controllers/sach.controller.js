@@ -237,3 +237,42 @@ exports.findAvailable = async (req, res, next) => {
     return next(new ApiError(500, "Lỗi khi lấy danh sách sách có thể mượn"));
   }
 };
+
+exports.search = async (req, res, next) => {
+  const keyword = req.query.q?.trim();
+
+  if (!keyword) {
+    return res.send({
+      message: "Vui lòng nhập từ khóa tìm kiếm",
+      data: [],
+      total: 0,
+    });
+  }
+
+  try {
+    const sachService = new SachService(MongoDB.client);
+
+    // Tìm trong các trường: TenSach, TacGia, MaSach (mã sách), MaNXB
+    const regex = new RegExp(keyword, "i"); // không phân biệt hoa thường
+
+    const documents = await sachService.find({
+      $or: [
+        { TenSach: regex },
+        { TacGia: regex },
+        { MaSach: regex },
+        { MaNXB: regex },
+      ],
+    });
+
+    return res.send({
+      message: documents.length
+        ? "Tìm kiếm thành công"
+        : "Không tìm thấy sách nào",
+      data: documents,
+      total: documents.length,
+    });
+  } catch (error) {
+    console.error("Lỗi tìm kiếm sách:", error);
+    return next(new ApiError(500, "Lỗi khi tìm kiếm sách"));
+  }
+};

@@ -31,7 +31,7 @@ const featuredBooks = ref([]);
 
 onMounted(async () => {
     await bookStore.fetchAvailableBooks();
-    featuredBooks.value = bookStore.books.slice(0, 8); // 8 cuốn để đẹp hơn
+    featuredBooks.value = bookStore.books.slice(0, 8);
 });
 
 function goToDetail(book) {

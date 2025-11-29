@@ -22,11 +22,6 @@
                 <div class="info-group">
                     <strong>Tác giả:</strong> <span>{{ book.TacGia || '—' }}</span>
                 </div>
-                <!-- <div class="info-group">
-                    <strong>Nhà xuất bản:</strong>
-                    <span>{{ book. || 'Alphabooks' }}</span>
-                    <small v-if="book.NamXuatBan"> (Năm {{ book.NamXuatBan }})</small>
-                </div> -->
 
                 <div class="price-stock">
                     <div class="price">

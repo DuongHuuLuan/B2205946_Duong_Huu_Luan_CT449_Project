@@ -506,6 +506,17 @@ class TheoDoiMuonSachService {
     return await this.TDMS.findOne({ _id });
   }
 
+  async aggregate(pipeline = []) {
+    if (!Array.isArray(pipeline)) pipeline = [];
+    const cursor = await this.TDMS.aggregate(pipeline);
+    return await cursor.toArray();
+  }
+
+  async count(filter = {}) {
+    if (!filter || typeof filter !== "object") filter = {};
+    return await this.TDMS.countDocuments(filter);
+  }
+
   async delete(id) {
     if (!ObjectId.isValid(id)) return null;
     return await this.TDMS.findOneAndDelete({ _id: new ObjectId(id) });

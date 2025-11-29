@@ -94,11 +94,18 @@ router
     authorizeRoleNhanVien(["Admin", "QuanLy", "ThuThu"]),
     uploadBiaSach.single("BiaSach"),
     sachController.update
-  ) // DELETE /api/sach/:id (Xóa - Chỉ Admin)
+  )
   .delete(
     verifyTokenNhanVien, // Sử dụng verifyToken của Nhân viên
     authorizeRoleNhanVien(["Admin"]),
     sachController.delete
   );
+
+router.get(
+  "/search",
+  verifyTokenDocGia,
+  authorizeRoleDocGia(),
+  sachController.search
+);
 
 module.exports = router;

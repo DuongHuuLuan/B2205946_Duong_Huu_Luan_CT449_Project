@@ -40,18 +40,29 @@ class SachService {
       _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
     });
   }
+  // async update(id, payload) {
+  //   const filter = { _id: ObjectId.isValid(id) ? new ObjectId(id) : null };
+  //   const update = this.extractSachData(payload);
+
+  //   //update trước
+  //   const result = await this.Sach.updateOne(filter, { $set: update });
+
+  //   if (result.matchedCound == 0) {
+  //     return null;
+  //   }
+
+  //   // lấy lại document sau khi update
+  //   return await this.Sach.findOne(filter);
+  // }
   async update(id, payload) {
     const filter = { _id: ObjectId.isValid(id) ? new ObjectId(id) : null };
     const update = this.extractSachData(payload);
 
-    //update trước
     const result = await this.Sach.updateOne(filter, { $set: update });
-
-    if (result.matchedCound == 0) {
+    if (result.matchedCount === 0) {
       return null;
     }
 
-    // lấy lại document sau khi update
     return await this.Sach.findOne(filter);
   }
 
@@ -73,7 +84,6 @@ class SachService {
    * @param {Object} filter - Bộ lọc MongoDB (ví dụ: {})
    */
   async count(filter = {}) {
-    // Sử dụng phương thức countDocuments() của MongoDB driver
     return await this.Sach.countDocuments(filter);
   } /**
    * @description Thực hiện các thao tác tổng hợp (Aggregation Pipeline)
