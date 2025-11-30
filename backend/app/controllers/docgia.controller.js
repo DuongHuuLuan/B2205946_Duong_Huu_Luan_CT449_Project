@@ -4,15 +4,10 @@ const MongoDB = require("../utils/mongodb.util");
 const { ObjectId } = require("mongodb");
 
 /**
- * Hàm chung để tạo Độc giả
  * @param {Object} req - Request object
  * @param {boolean} withFile - True nếu request có upload file (đã qua Multer)
  */
 const createDocGia = async (req, res, next, withFile = false) => {
-  // Nếu có file, đường dẫn file sẽ ở req.file.path
-  // Nếu không file, req.body chứa JSON
-
-  // Kiểm tra data cơ bản
   if (!req.body?.Ten) return next(new ApiError(400, "Tên không được trống"));
   if (!req.body?.MaDocGia)
     return next(new ApiError(400, "Mã Độc giả không được trống"));
@@ -22,7 +17,6 @@ const createDocGia = async (req, res, next, withFile = false) => {
 
     let payload = { ...req.body };
 
-    // Nếu đã qua Multer thành công và có file, gán path vào payload
     if (withFile && req.file) {
       payload.Avatar = req.file.path;
     }

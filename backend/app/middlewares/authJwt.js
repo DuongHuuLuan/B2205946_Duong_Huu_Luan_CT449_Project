@@ -13,7 +13,7 @@ const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // gắn thông tin user vào req để dùng tiếp
+    req.user = decoded;
     next();
   } catch (error) {
     return next(new ApiError(403, "Token không hợp lệ hoặc đã hết hạn"));

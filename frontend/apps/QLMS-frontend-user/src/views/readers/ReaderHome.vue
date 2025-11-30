@@ -67,11 +67,6 @@ function goToAllBooks() {
     gap: 1.8rem;
     overflow-x: auto;
     padding: 1rem 0;
-    scrollbar-width: none;
-}
-
-.carousel::-webkit-scrollbar {
-    display: none;
 }
 
 .view-all {

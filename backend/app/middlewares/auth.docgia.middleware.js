@@ -4,7 +4,7 @@ const ApiError = require("../api-error");
 const JWT_SECRET = process.env.JWT_SECRET || "secret123";
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
     return next(new ApiError(401, "Không có token, truy cập bị từ chối"));
